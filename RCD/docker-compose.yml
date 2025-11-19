@@ -44,7 +44,9 @@ services:
 
   web:
     container_name: rcd-web
-    build: ./esports-rcd-frontend
+    build:
+      context: .
+      dockerfile: Dockerfile.web
     ports:
       - "8080:3000"
     depends_on:
