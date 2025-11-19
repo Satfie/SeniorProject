@@ -196,6 +196,76 @@ MIT License - feel free to use this project for your own purposes.
 ## Support
 
 For issues or questions, please open an issue on the repository.
+ 
+## Production Deployment (Docker)
+
+This project ships with a `docker-compose.yml` orchestrating:
+- `web` (Next.js frontend → host port 8080)
+- `auth` (auth API → host port 3002)
+- `app` (core backend API → host port 3001)
+- `mongo` (database, internal only)
+
+Key production tweaks already applied:
+- Removed external Mongo port; DB only reachable on internal `rcd-network`.
+- Healthchecks for `web`, `auth`, `app` ensure container readiness.
+- Frontend Dockerfile builds Next.js (`npm run build`) prior to `next start`.
+
+### First Deployment
+```bash
+sudo apt-get update && sudo apt-get install -y docker.io docker-compose
+git clone <repo-url> /srv/seniorproject
+cd /srv/seniorproject/RCD
+cp .env.example .env.local   # add secrets / overrides
+docker-compose build
+docker-compose up -d
+```
+
+### Verification
+```bash
+docker-compose ps
+curl -I http://localhost:8080
+```
+
+### Nginx Integration
+Use `deploy/nginx/rcd-esports.conf` (edit domain + cert paths) then:
+```bash
+sudo ln -s /srv/seniorproject/RCD/deploy/nginx/rcd-esports.conf /etc/nginx/sites-available/rcd-esports.conf
+sudo ln -s /etc/nginx/sites-available/rcd-esports.conf /etc/nginx/sites-enabled/rcd-esports.conf
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### Updating
+```bash
+cd /srv/seniorproject
+git pull
+cd RCD
+docker-compose build
+docker-compose up -d
+```
+
+### Rollback
+```bash
+git log --oneline
+git checkout <previous_good_commit>
+docker-compose build
+docker-compose up -d
+git checkout master  # when ready to return
+```
+
+### Blue/Green (Optional)
+Run second stack with different project name & ports (e.g. 8081) then switch nginx upstream after healthchecks pass.
+
+### Backups
+```bash
+docker exec rcd-mongo mongodump --archive --gzip > /backups/$(date +%F).gz
+```
+Automate via cron; sync backups off-host.
+
+### Security
+- Firewall allow only 80/443/22
+- Keep `auth`/`app` private unless external consumers require them
+- Rotate secrets & rebuild images periodically
+- Store secrets in `.env.local` (never commit)
 \`\`\`
 
 ```json file="" isHidden

@@ -14,6 +14,11 @@ services:
     volumes:
       - ./rcd-app:/usr/src/app
       - /usr/src/app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
     networks:
       - rcd-network
 
@@ -27,6 +32,11 @@ services:
     environment:
       - MONGO_URI=mongodb://mongo:27017/rcd
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
     networks:
       - rcd-network
 
@@ -39,14 +49,17 @@ services:
       - app
       - auth
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
     networks:
       - rcd-network
 
   mongo:
     container_name: rcd-mongo
     image: mongo:6
-    ports:
-      - "27017:27017"
     volumes:
       - mongodb_data:/data/db
     restart: unless-stopped
