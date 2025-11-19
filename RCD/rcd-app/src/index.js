@@ -24,6 +24,11 @@ connectDB();
 // Routes
 app.use('/api', routes);
 
+// Health endpoint
+app.get('/health', (req, res) => {
+    res.json({ ok: true });
+});
+
 // Start server
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);

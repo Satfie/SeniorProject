@@ -101,6 +101,11 @@ async function start() {
   app.use('/api/users', usersRoutes);
   app.use('/api/notifications', notificationsRoutes);
 
+  // Health endpoint for container checks
+  app.get('/health', (req, res) => {
+    res.json({ ok: true });
+  });
+
   // audit logs listing (admin only)
   const requireRole = require('./middleware/roleMiddleware');
   const AuditLog = require('./models/auditLog');

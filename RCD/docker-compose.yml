@@ -15,7 +15,7 @@ services:
       - ./rcd-app:/usr/src/app
       - /usr/src/app/node_modules
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -26,14 +26,16 @@ services:
     container_name: rcd-auth
     build: ./rcd-auth-server
     ports:
-      - "3002:3000"
+      - "3002:3002"
     depends_on:
       - mongo
     environment:
       - MONGO_URI=mongodb://mongo:27017/rcd
+      - PORT=3002
+      - FRONTEND_ORIGIN=http://localhost:8080,http://localhost:3000
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
       interval: 30s
       timeout: 5s
       retries: 5
