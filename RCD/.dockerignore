@@ -1,0 +1,19 @@
+# Exclude legacy app to prevent accidental builds
+esports-rcd-frontend/
+
+# Exclude backend services from web build context
+rcd-app/
+rcd-auth-server/
+
+# Common ignores
+node_modules/
+.next/
+dist/
+.git/
+.gitignore
+Dockerfile*
+**/*.log
+**/.DS_Store
+public-archive/
+rcd-app/public-archive/
+rcd-auth-server/public-archive/
