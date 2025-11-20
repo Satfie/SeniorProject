@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Bell,
   ChevronDown,
+  Home,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -32,7 +33,7 @@ type NavLink = {
 };
 
 const navLinks: NavLink[] = [
-  { href: "/", label: "Home", icon: Trophy, show: () => true },
+  { href: "/", label: "Home", icon: Home, show: () => true },
   {
     href: "/tournaments",
     label: "Tournaments",
