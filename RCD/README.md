@@ -1,6 +1,6 @@
-# RCD Esports - Tournament Management Platform
+# Esport Shield - Tournament Management Platform
 
-A modern, professional Esports tournament management platform built with Next.js, TypeScript, and Tailwind CSS.
+A modern, professional esports tournament management platform built with Next.js, TypeScript, and Tailwind CSS.
 
 ## Features
 
@@ -120,7 +120,7 @@ pnpm dev
 
 ## API Integration
 
-The frontend is designed to work with the RCD backend API. All API calls use relative URLs and include JWT authentication in the `Authorization` header.
+The frontend is designed to work with the Esport Shield backend API. All API calls use relative URLs and include JWT authentication in the `Authorization` header.
 
 ### API Endpoints
 

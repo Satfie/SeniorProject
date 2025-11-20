@@ -18,8 +18,8 @@ const _geistMono = V0_Font_Geist_Mono({ subsets: ['latin'], weight: ["100","200"
 const _sourceSerif_4 = V0_Font_Source_Serif_4({ subsets: ['latin'], weight: ["200","300","400","500","600","700","800","900"] })
 
 export const metadata: Metadata = {
-  title: "RCD Esports - Tournament Management",
-  description: "Professional Esports tournament management platform",
+  title: "Esport Shield - Tournament Management",
+  description: "Professional esports tournament management platform",
   generator: "v0.app",
 }
 

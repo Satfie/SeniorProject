@@ -148,7 +148,7 @@ export function Navbar() {
               <Trophy className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-xl font-bold text-transparent">
-              RCD Esports
+              Esport Shield
             </span>
           </Link>
 

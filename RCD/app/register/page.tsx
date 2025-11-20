@@ -59,7 +59,7 @@ export default function RegisterPage() {
               <Trophy className="w-10 h-10 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold">Join RCD Esports</h1>
+          <h1 className="text-3xl font-bold">Join Esport Shield</h1>
           <p className="text-muted-foreground">Create your account and start competing</p>
         </div>
 

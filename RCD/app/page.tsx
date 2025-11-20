@@ -49,7 +49,7 @@ export default function HomePage() {
               Arena
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto text-pretty">
-              Join tournaments, build your team, and dominate the competition. RCD Esports brings professional
+              Join tournaments, build your team, and dominate the competition. Esport Shield brings professional
               tournament management to competitive gaming.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
@@ -87,7 +87,7 @@ export default function HomePage() {
       <section className="py-20 bg-card/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose RCD Esports?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Esport Shield?</h2>
             <p className="text-muted-foreground text-lg">Everything you need for competitive gaming</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">

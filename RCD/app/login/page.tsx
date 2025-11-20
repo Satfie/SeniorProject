@@ -48,7 +48,7 @@ export default function LoginPage() {
             </div>
           </div>
           <h1 className="text-3xl font-bold">Welcome Back</h1>
-          <p className="text-muted-foreground">Sign in to your RCD Esports account</p>
+          <p className="text-muted-foreground">Sign in to your Esport Shield account</p>
         </div>
 
         {/* Login Form */}
