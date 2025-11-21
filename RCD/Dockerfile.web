@@ -1,6 +1,9 @@
 
 FROM node:18-alpine
 
+# Install curl for healthchecks (docker-compose uses curl in healthcheck tests)
+RUN apk add --no-cache curl
+
 WORKDIR /usr/src/app
 
 # Only copy root package files for dependency install

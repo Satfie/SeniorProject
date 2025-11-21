@@ -234,6 +234,44 @@ sudo ln -s /etc/nginx/sites-available/rcd-esports.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
+#### Advanced Nginx Notes
+- Frontend container listens on `8080`; auth API `3002`; core app API `3001`.
+- Updated config defines upstream blocks and enforces HTTP→HTTPS redirect with ACME challenge passthrough.
+- SSE endpoints (`/api/notifications/stream`, `/api/tournaments/:id/bracket/stream`) disable `proxy_buffering` for real-time updates.
+- Static assets (`js, css, images, fonts`) get 30d immutable caching while still flowing through Next.js.
+- Optional unified `/api` routing commented inside the config: uncomment and adjust patterns if you prefer a single ingress path.
+- Security headers (CSP, Frame, XSS) are present—tune CSP if you introduce external analytics, fonts, or script CDNs.
+- Rate limiting examples are commented (`limit_req_zone` + `limit_req`). Define the zone globally in `nginx.conf` before enabling.
+- Health probe at `/healthz` returns a simple 200 for container orchestration.
+
+#### Environment Variables Behind Nginx
+For production behind the proxy:
+```env
+NEXT_PUBLIC_DATA_MODE=real
+NEXT_PUBLIC_API_URL=https://esports.example.com/app/   # or /api/ if unified routing enabled
+```
+In mock mode keep `NEXT_PUBLIC_API_URL` empty and the frontend serves API routes directly.
+
+#### TLS Setup (Let’s Encrypt quickstart)
+```bash
+sudo apt-get install -y certbot python3-certbot-nginx
+sudo certbot certonly --nginx -d esports.example.com --agree-tos -m admin@esports.example.com --non-interactive
+sudo systemctl reload nginx
+```
+
+#### Deployment Recap
+1. Bring up stack: `docker-compose up -d`
+2. Verify containers: `docker-compose ps`
+3. Enable nginx site & test: `sudo nginx -t && sudo systemctl reload nginx`
+4. Switch `NEXT_PUBLIC_DATA_MODE` to `real` only after auth/app APIs are healthy.
+5. Monitor logs:
+```bash
+docker logs -f rcd-web
+docker logs -f rcd-auth
+docker logs -f rcd-app
+sudo tail -f /var/log/nginx/access.log /var/log/nginx/error.log
+```
+
 ### Updating
 ```bash
 cd /srv/seniorproject
