@@ -141,14 +141,14 @@ export function Navbar() {
   const filteredLinks = navLinks.filter((link) => link.show(!!user, !!isAdmin));
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border bg-card/70 backdrop-blur">
+    <nav className="sticky top-0 z-50 border-b border-white/10 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-purple-600">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-purple-600 shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-all group-hover:scale-110">
               <Trophy className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-xl font-bold text-transparent">
+            <span className="bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-xl font-bold text-transparent group-hover:opacity-80 transition-opacity">
               Esport Shield
             </span>
           </Link>
@@ -158,10 +158,11 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground transition-all hover:text-primary hover:scale-105 relative group"
               >
-                <link.icon className="h-4 w-4" />
+                <link.icon className="h-4 w-4 group-hover:text-primary transition-colors" />
                 {link.label}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
               </Link>
             ))}
           </div>
@@ -174,7 +175,7 @@ export function Navbar() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="flex items-center gap-2 px-3 py-1 text-sm"
+                    className="flex items-center gap-2 px-3 py-1 text-sm hover:bg-primary/10 transition-colors"
                     onClick={() => {
                       setNotificationsOpen((prev) => !prev);
                       refresh().then(() => markAllRead());
@@ -184,7 +185,7 @@ export function Navbar() {
                   >
                     <Bell className="h-4 w-4" />
                     {unreadCount + managerUnread > 0 ? (
-                      <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
+                      <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground animate-pulse">
                         {unreadCount + managerUnread}
                       </span>
                     ) : (
@@ -192,17 +193,17 @@ export function Navbar() {
                         No alerts
                       </span>
                     )}
-                    <ChevronDown className="h-4 w-4 opacity-70" />
+                    <ChevronDown className={`h-4 w-4 opacity-70 transition-transform ${notificationsOpen ? 'rotate-180' : ''}`} />
                   </Button>
                   {notificationsOpen && (
-                    <div className="absolute right-0 mt-2 w-80 rounded-lg border border-border bg-popover shadow-lg">
+                    <div className="absolute right-0 mt-2 w-80 rounded-lg border border-border bg-popover/95 backdrop-blur shadow-xl animate-in fade-in zoom-in-95 duration-200">
                       <div className="flex items-center justify-between border-b border-border px-4 py-2">
                         <p className="text-sm font-semibold">Notifications</p>
                         <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 px-2 text-xs"
+                            className="h-7 px-2 text-xs hover:text-primary"
                             onClick={refresh}
                           >
                             Refresh
@@ -210,36 +211,35 @@ export function Navbar() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 px-2 text-xs"
+                            className="h-7 px-2 text-xs hover:text-destructive"
                             onClick={clearAll}
                           >
                             Clear
                           </Button>
                         </div>
                       </div>
-                      <div className="max-h-80 overflow-y-auto">
+                      <div className="max-h-80 overflow-y-auto custom-scrollbar">
                         {/* Manager join requests */}
                         {user?.role === "team_manager" && (
-                          <div className="px-4 py-3 border-b border-border">
-                            <p className="text-xs font-semibold mb-2">
-                              Join Requests
+                          <div className="px-4 py-3 border-b border-border bg-muted/30">
+                            <p className="text-xs font-semibold mb-2 flex items-center gap-2">
+                              <Users className="w-3 h-3" /> Join Requests
                             </p>
                             {managerRequests.length === 0 ? (
-                              <p className="text-xs text-muted-foreground">
-                                None
+                              <p className="text-xs text-muted-foreground italic">
+                                No pending requests
                               </p>
                             ) : (
                               managerRequests.map((r) => (
-                                <div key={r.id} className="mb-2 last:mb-0">
-                                  <p className="text-xs font-medium truncate">
+                                <div key={r.id} className="mb-2 last:mb-0 bg-background p-2 rounded border border-border">
+                                  <p className="text-xs font-medium truncate mb-1">
                                     {r.user?.email || r.userId} →{" "}
                                     {r.team?.name || r.teamId}
                                   </p>
-                                  <div className="flex gap-2 mt-1">
+                                  <div className="flex gap-2">
                                     <Button
                                       size="sm"
-                                      variant="outline"
-                                      className="h-6 px-2 text-xs"
+                                      className="h-6 px-2 text-xs w-full bg-green-600 hover:bg-green-700 text-white"
                                       onClick={async () => {
                                         await api.approveJoinRequest(
                                           r.teamId,
@@ -256,7 +256,7 @@ export function Navbar() {
                                     <Button
                                       size="sm"
                                       variant="ghost"
-                                      className="h-6 px-2 text-xs"
+                                      className="h-6 px-2 text-xs w-full hover:bg-destructive/10 hover:text-destructive"
                                       onClick={async () => {
                                         await api.declineJoinRequest(
                                           r.teamId,
@@ -278,22 +278,23 @@ export function Navbar() {
                         )}
                         {/* General notifications */}
                         {notifications.length === 0 ? (
-                          <p className="px-4 py-6 text-sm text-muted-foreground">
-                            You are all caught up.
-                          </p>
+                          <div className="px-4 py-8 text-center text-muted-foreground">
+                            <Bell className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                            <p className="text-sm">You are all caught up.</p>
+                          </div>
                         ) : (
                           notifications.map((notification) => (
                             <div
                               key={notification.id}
-                              className="flex flex-col gap-2 border-b border-border px-4 py-3 last:border-none"
+                              className="flex flex-col gap-2 border-b border-border px-4 py-3 last:border-none hover:bg-muted/50 transition-colors"
                             >
                               <div className="flex items-start justify-between gap-4">
                                 <div className="min-w-0">
-                                  <p className="text-sm font-medium">
+                                  <p className="text-sm font-medium leading-snug">
                                     {notification.message}
                                   </p>
                                   {notification.createdAt && (
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground mt-1">
                                       {new Date(
                                         notification.createdAt
                                       ).toLocaleString()}
@@ -302,11 +303,11 @@ export function Navbar() {
                                 </div>
                                 <button
                                   type="button"
-                                  className="rounded-md px-1 text-xs text-muted-foreground hover:text-foreground"
+                                  className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-background transition-colors"
                                   onClick={() => dismiss(notification.id)}
                                   aria-label="Dismiss notification"
                                 >
-                                  ×
+                                  <X className="w-3 h-3" />
                                 </button>
                               </div>
                               {notification.actionLabel &&
@@ -314,7 +315,7 @@ export function Navbar() {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-8 px-3 text-xs"
+                                    className="h-7 px-3 text-xs self-start mt-1"
                                     onClick={() => {
                                       notification.onAction?.();
                                       setNotificationsOpen(false);
@@ -335,37 +336,51 @@ export function Navbar() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="flex items-center gap-2 px-3 py-1 text-sm"
+                    className="flex items-center gap-2 px-3 py-1 text-sm hover:bg-primary/10 transition-colors rounded-full pl-1"
                     onClick={() => setProfileOpen((prev) => !prev)}
                     aria-haspopup="true"
                     aria-expanded={profileOpen}
                   >
-                    <Avatar className="h-6 w-6">
+                    <Avatar className="h-8 w-8 border-2 border-primary/20">
                       <AvatarImage
                         src={user?.avatarUrl || "/placeholder-user.jpg"}
                         alt={displayName}
                       />
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-primary/10 text-primary">
                         {(displayName || "U").slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="max-w-[160px] truncate font-medium">
+                    <span className="max-w-[100px] truncate font-medium hidden lg:block">
                       {displayName}
                     </span>
-                    <ChevronDown className="h-4 w-4 opacity-70" />
+                    <ChevronDown className={`h-4 w-4 opacity-70 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
                   </Button>
                   {profileOpen && (
-                    <div className="absolute right-0 mt-2 w-48 rounded-lg border border-border bg-popover py-2 shadow-lg">
+                    <div className="absolute right-0 mt-2 w-56 rounded-lg border border-border bg-popover/95 backdrop-blur shadow-xl animate-in fade-in zoom-in-95 duration-200 p-1">
+                      <div className="px-3 py-2 border-b border-border mb-1">
+                        <p className="text-sm font-medium truncate">{displayName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      </div>
                       <Link
                         href="/profile"
-                        className="block px-4 py-2 text-sm hover:bg-muted"
+                        className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-primary/10 hover:text-primary rounded-md transition-colors"
                         onClick={() => setProfileOpen(false)}
                       >
+                        <Users className="w-4 h-4" />
                         My Profile
                       </Link>
+                      <Link
+                        href="/dashboard"
+                        className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-primary/10 hover:text-primary rounded-md transition-colors"
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        <LayoutDashboard className="w-4 h-4" />
+                        Dashboard
+                      </Link>
+                      <div className="h-px bg-border my-1"></div>
                       <button
                         type="button"
-                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-muted"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-md transition-colors"
                         onClick={handleLogout}
                       >
                         <LogOut className="h-4 w-4" />
@@ -377,15 +392,16 @@ export function Navbar() {
               </>
             ) : (
               <>
-                <Button asChild variant="ghost" size="sm">
+                <Button asChild variant="ghost" size="sm" className="hover:bg-primary/10 hover:text-primary">
                   <Link href="/login">Login</Link>
                 </Button>
-                <Button asChild size="sm">
+                <Button asChild size="sm" className="shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-105">
                   <Link href="/register">Register</Link>
                 </Button>
               </>
             )}
           </div>
+
 
           <div className="flex items-center gap-2 md:hidden">
             <ThemeToggle />

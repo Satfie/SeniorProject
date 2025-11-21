@@ -49,6 +49,11 @@ services:
       dockerfile: Dockerfile.web
     ports:
       - "8080:3000"
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+      - /usr/src/app/.next
+    command: npm run dev
     depends_on:
       - app
       - auth
