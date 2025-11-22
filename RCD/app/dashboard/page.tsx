@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { api, type Tournament, type Team, type JoinRequest, type User } from "@/lib/api"
+import { api, type Tournament, type Team, type JoinRequest } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { ProtectedRoute } from "@/components/protected-route"
 import { Button } from "@/components/ui/button"
@@ -14,20 +14,15 @@ import Link from "next/link"
 import { 
   Trophy, 
   Users, 
-  Calendar, 
   TrendingUp, 
-  CheckCircle, 
-  XCircle, 
   UserMinus, 
   Plus, 
   Shield, 
-  Activity, 
   ArrowRight, 
   Swords, 
   Gamepad2, 
   Bell, 
   Settings, 
-  LogOut,
   Search,
   Star,
   Zap
@@ -37,19 +32,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner"
 import { AnimatedSection } from "@/components/ui/animated-section"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Progress } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useNotifications } from "@/lib/notifications-context"
 
 function DashboardContent() {
-  const { user, isPlayer, isTeamManager, isAdmin, refreshUser } = useAuth()
+  const { user, isTeamManager, isAdmin, refreshUser } = useAuth()
   const { notifications } = useNotifications()
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [team, setTeam] = useState<Team | null>(null)
   const [managedTeams, setManagedTeams] = useState<Team[]>([])
-  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([])
   const [managerRequests, setManagerRequests] = useState<Array<JoinRequest & { team?: any; user?: any }>>([])
-  const [loading, setLoading] = useState(true)
   
   // Team Creation State
   const [newTeamName, setNewTeamName] = useState("")
@@ -62,7 +54,8 @@ function DashboardContent() {
   const [removeReason, setRemoveReason] = useState("")
   const [removingMember, setRemovingMember] = useState(false)
 
-  const isCaptain = !!(team && user && team.captainIds && team.captainIds.includes(user.id))
+  // Role Helpers
+  const isTeamOwner = !!(team && user && team.managerId === user.id)
 
   // Fetch Data
   useEffect(() => {
@@ -80,7 +73,7 @@ function DashboardContent() {
           setTeam(null)
         }
 
-        if (user && isTeamManager) {
+        if (user && (isTeamManager || isAdmin)) {
           try {
             const all = await api.getTeams();
             setManagedTeams(all.filter(t => t.managerId === user.id));
@@ -93,12 +86,10 @@ function DashboardContent() {
         }
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error)
-      } finally {
-        setLoading(false)
       }
     }
     fetchData()
-  }, [user, isTeamManager])
+  }, [user, isTeamManager, isAdmin])
 
   // Handlers
   const handleCreateTeam = async () => {
@@ -170,7 +161,7 @@ function DashboardContent() {
     </Card>
   )
 
-  const QuickAction = ({ icon: Icon, label, href, onClick, variant = "outline" }: any) => {
+  const QuickAction = ({ icon: Icon, label, href, onClick }: any) => {
     const content = (
       <div className="flex flex-col items-center justify-center gap-2 p-4 h-full hover:bg-primary/5 transition-colors rounded-xl cursor-pointer group">
         <div className="p-3 rounded-full bg-background border border-white/10 group-hover:border-primary/50 group-hover:scale-110 transition-all shadow-lg">
@@ -221,6 +212,14 @@ function DashboardContent() {
             </div>
 
             <div className="flex gap-3 w-full md:w-auto">
+              {isAdmin && (
+                <Button asChild variant="destructive" className="flex-1 md:flex-none shadow-lg shadow-red-500/20">
+                  <Link href="/admin">
+                    <Shield className="w-4 h-4 mr-2" />
+                    Admin Panel
+                  </Link>
+                </Button>
+              )}
               <Button asChild className="flex-1 md:flex-none shadow-lg shadow-primary/20">
                 <Link href="/tournaments">
                   <Swords className="w-4 h-4 mr-2" />
@@ -246,14 +245,14 @@ function DashboardContent() {
             />
             <StatCard 
               title="Win Rate" 
-              value="--" 
+              value={team ? "48%" : "--"} 
               icon={TrendingUp} 
               color="green-500"
-              trend="+2.5%"
+              trend={team ? "+2.5%" : undefined}
             />
             <StatCard 
               title="Team Rank" 
-              value="#42" 
+              value={team ? "#42" : "--"} 
               icon={Trophy} 
               color="yellow-500"
             />
@@ -273,7 +272,7 @@ function DashboardContent() {
             <TabsTrigger value="overview" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Overview</TabsTrigger>
             <TabsTrigger value="tournaments" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">My Tournaments</TabsTrigger>
             <TabsTrigger value="team" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Team Center
+              {isTeamManager ? "Team Management" : "My Team"}
               {managerRequests.length > 0 && (
                 <Badge variant="secondary" className="ml-2 bg-red-500 text-white hover:bg-red-600 h-5 px-1.5">{managerRequests.length}</Badge>
               )}
@@ -371,7 +370,11 @@ function DashboardContent() {
                       <QuickAction icon={Search} label="Find Team" href="/teams" />
                       <QuickAction icon={Plus} label="Create Team" onClick={() => document.getElementById('create-team-trigger')?.click()} />
                       <QuickAction icon={Users} label="My Team" href={user?.teamId ? `/teams/${user.teamId}` : "/teams"} />
-                      <QuickAction icon={Settings} label="Edit Profile" href="/profile" />
+                      {isAdmin ? (
+                        <QuickAction icon={Shield} label="Admin" href="/admin" />
+                      ) : (
+                        <QuickAction icon={Settings} label="Edit Profile" href="/profile" />
+                      )}
                     </CardContent>
                   </Card>
                 </AnimatedSection>
@@ -416,53 +419,61 @@ function DashboardContent() {
             <div className="grid md:grid-cols-3 gap-6">
               {/* Left Col: Team List / Creation */}
               <div className="space-y-6">
+                {/* Only show Managed Teams if user is a manager */}
+                {(isTeamManager || managedTeams.length > 0) && (
+                  <Card className="bg-card/40 backdrop-blur border-white/5">
+                    <CardHeader>
+                      <CardTitle>Managed Teams</CardTitle>
+                      <CardDescription>Teams you own</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {managedTeams.map(t => (
+                        <div key={t.id} className="p-4 rounded-xl bg-background/50 border border-white/5 hover:border-primary/30 transition-all cursor-pointer group">
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-bold group-hover:text-primary transition-colors">{t.name}</h4>
+                            <Badge variant="outline">{t.tag || "N/A"}</Badge>
+                          </div>
+                          <div className="flex justify-between text-sm text-muted-foreground">
+                            <span>{t.members?.length || 0} Members</span>
+                            <span className="text-green-400">{formatCurrency(t.balance || 0)}</span>
+                          </div>
+                          <Button size="sm" variant="secondary" className="w-full mt-3" asChild>
+                            <Link href={`/teams/${t.id}`}>Manage</Link>
+                          </Button>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {/* Create Team Widget - Always visible to encourage growth */}
                 <Card className="bg-card/40 backdrop-blur border-white/5">
                   <CardHeader>
-                    <CardTitle>Your Teams</CardTitle>
-                    <CardDescription>Teams you manage or belong to</CardDescription>
+                    <CardTitle>Create Team</CardTitle>
+                    <CardDescription>Start your own squad</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    {managedTeams.map(t => (
-                      <div key={t.id} className="p-4 rounded-xl bg-background/50 border border-white/5 hover:border-primary/30 transition-all cursor-pointer group">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-bold group-hover:text-primary transition-colors">{t.name}</h4>
-                          <Badge variant="outline">{t.tag || "N/A"}</Badge>
-                        </div>
-                        <div className="flex justify-between text-sm text-muted-foreground">
-                          <span>{t.members?.length || 0} Members</span>
-                          <span className="text-green-400">{formatCurrency(t.balance || 0)}</span>
-                        </div>
-                        <Button size="sm" variant="secondary" className="w-full mt-3" asChild>
-                          <Link href={`/teams/${t.id}`}>Manage</Link>
-                        </Button>
-                      </div>
-                    ))}
-                    
-                    {/* Create Team Widget */}
-                    <div className="p-4 rounded-xl border-2 border-dashed border-white/10 hover:border-primary/30 transition-all">
-                      <h4 className="font-medium mb-3 text-center">Create New Team</h4>
-                      <div className="space-y-3">
-                        <Input 
-                          placeholder="Team Name" 
-                          value={newTeamName}
-                          onChange={(e) => setNewTeamName(e.target.value)}
-                          className="bg-background/50"
-                        />
-                        <Input 
-                          placeholder="Tag (e.g. TSM)" 
-                          value={newTeamTag}
-                          onChange={(e) => setNewTeamTag(e.target.value)}
-                          className="bg-background/50"
-                        />
-                        <Button 
-                          id="create-team-trigger"
-                          className="w-full" 
-                          disabled={!newTeamName.trim() || creatingTeam}
-                          onClick={handleCreateTeam}
-                        >
-                          {creatingTeam ? "Creating..." : "Create Team"}
-                        </Button>
-                      </div>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <Input 
+                        placeholder="Team Name" 
+                        value={newTeamName}
+                        onChange={(e) => setNewTeamName(e.target.value)}
+                        className="bg-background/50"
+                      />
+                      <Input 
+                        placeholder="Tag (e.g. TSM)" 
+                        value={newTeamTag}
+                        onChange={(e) => setNewTeamTag(e.target.value)}
+                        className="bg-background/50"
+                      />
+                      <Button 
+                        id="create-team-trigger"
+                        className="w-full" 
+                        disabled={!newTeamName.trim() || creatingTeam}
+                        onClick={handleCreateTeam}
+                      >
+                        {creatingTeam ? "Creating..." : "Create Team"}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -470,7 +481,7 @@ function DashboardContent() {
 
               {/* Right Col: Requests & Roster */}
               <div className="md:col-span-2 space-y-6">
-                {/* Join Requests */}
+                {/* Join Requests - Only for managers */}
                 {managerRequests.length > 0 && (
                   <Card className="bg-card/40 backdrop-blur border-primary/20">
                     <CardHeader>
@@ -507,12 +518,14 @@ function DashboardContent() {
                 )}
 
                 {/* Current Team Roster (if player has a team) */}
-                {team && (
+                {team ? (
                   <Card className="bg-card/40 backdrop-blur border-white/5">
                     <CardHeader className="flex flex-row items-center justify-between">
                       <div>
                         <CardTitle>{team.name} Roster</CardTitle>
-                        <CardDescription>Manage members and roles</CardDescription>
+                        <CardDescription>
+                          {isTeamOwner ? "Manage your team members" : "Your teammates"}
+                        </CardDescription>
                       </div>
                       <Button variant="outline" asChild>
                         <Link href={`/teams/${team.id}`}>View Full Page</Link>
@@ -535,7 +548,8 @@ function DashboardContent() {
                                 </div>
                               </div>
                             </div>
-                            {isTeamManager && member.id !== team.managerId && (
+                            {/* Only show remove button if current user is the manager of THIS team */}
+                            {isTeamOwner && member.id !== user.id && (
                               <div className="flex gap-1">
                                 <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openRemoveDialog(member.id)}>
                                   <UserMinus className="w-4 h-4 text-destructive" />
@@ -544,6 +558,27 @@ function DashboardContent() {
                             )}
                           </div>
                         ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  // Empty State for Players without a team
+                  <Card className="bg-card/40 backdrop-blur border-white/5 border-dashed">
+                    <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                        <Users className="w-8 h-8 text-primary" />
+                      </div>
+                      <h3 className="text-xl font-bold mb-2">No Team Yet</h3>
+                      <p className="text-muted-foreground max-w-sm mb-6">
+                        Join an existing team or create your own to start competing in tournaments.
+                      </p>
+                      <div className="flex gap-3">
+                        <Button asChild variant="outline">
+                          <Link href="/teams">Find a Team</Link>
+                        </Button>
+                        <Button onClick={() => document.getElementById('create-team-trigger')?.click()}>
+                          Create Team
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
