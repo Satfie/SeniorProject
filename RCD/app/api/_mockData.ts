@@ -110,9 +110,6 @@ export type Bracket = {
   rounds: Record<BracketSide, Array<{ round: number; matches: Match[] }>>
 }
 
-let counter = 1000
-const newid = () => String(counter++)
-
 // Global singleton store to survive Next.js dev fast refresh
 const g: any = globalThis as any
 if (!g.__RCD_STORE__) {
@@ -126,9 +123,19 @@ if (!g.__RCD_STORE__) {
     bracketSubscribers: {} as Record<string, Set<(b: Bracket) => void>>,
     auditLogs: [] as AuditLog[],
     userNotifications: {} as Record<string, UserNotification[]>,
+    sequence: 1000,
   };
 }
 const STORE = g.__RCD_STORE__
+
+if (typeof STORE.sequence !== "number") {
+  STORE.sequence = 1000;
+}
+
+const newid = () => {
+  const value = STORE.sequence++;
+  return String(value);
+}
 
 // Seed users (only once)
 export const users: MockUser[] = STORE.users

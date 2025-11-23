@@ -53,6 +53,8 @@ services:
       - .:/usr/src/app
       - /usr/src/app/node_modules
       - /usr/src/app/.next
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/rcd
     command: npm run dev
     depends_on:
       - app
