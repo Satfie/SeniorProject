@@ -36,6 +36,7 @@ async function ensureIndexes(db: Db) {
   await db.collection('teamJoinRequests').createIndex({ teamId: 1, userId: 1, status: 1 })
   await db.collection('tournamentRegistrations').createIndex({ tournamentId: 1, teamId: 1 }, { unique: true })
   await db.collection('tournamentBrackets').createIndex({ tournamentId: 1 }, { unique: true })
+  await db.collection('notifications').createIndex({ userId: 1, createdAt: -1 })
 }
 
 async function seedIfEmpty(db: Db) {

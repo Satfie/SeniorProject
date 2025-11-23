@@ -16,6 +16,7 @@ import {
   type TeamDoc,
   type UserDoc,
 } from "@/lib/team-service";
+import { createNotification } from "@/lib/notification-service";
 
 export async function POST(
   req: NextRequest,
@@ -81,6 +82,13 @@ export async function POST(
       { $set: { status: "declined" } }
     );
     const updated = await joinRequests.findOne({ _id: requestDoc._id });
+    await createNotification(db, {
+      userId: requestDoc.userId,
+      type: "success",
+      message: `You were approved to join team ${team.name}`,
+      teamId,
+      metadata: { teamId, requestId: normalizeId(requestDoc._id) },
+    });
     return NextResponse.json(serializeJoinRequest(updated!));
   } catch (error: any) {
     if (error instanceof AuthServiceError) {

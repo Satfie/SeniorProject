@@ -1,6 +1,7 @@
 import { Db, ObjectId } from "mongodb"
 import type { Bracket, BracketKind, Match, Registration, Tournament } from "@/lib/api"
-import { buildIdFilter, looksLikeObjectId, normalizeId } from "@/lib/team-service"
+import { createNotifications } from "@/lib/notification-service"
+import { buildIdFilter, looksLikeObjectId, normalizeId, type TeamDoc } from "@/lib/team-service"
 
 const TOURNAMENTS_COLLECTION = "tournaments"
 const REGISTRATIONS_COLLECTION = "tournamentRegistrations"
@@ -734,11 +735,27 @@ export async function endTournamentAndPayout(db: Db, tournamentId: string) {
     }
   }
 
+  const teamsCol = db.collection<TeamDoc>("teams")
   for (const award of awards) {
     if (award.amount > 0) {
-      await db
-        .collection("teams")
-        .updateOne(buildIdFilter(award.teamId), { $inc: { balance: award.amount } })
+      const filter = buildIdFilter(award.teamId)
+      const teamDoc = await teamsCol.findOne(filter)
+      await teamsCol.updateOne(filter, { $inc: { balance: award.amount } })
+      const memberIds = teamDoc && Array.isArray(teamDoc.members)
+        ? Array.from(new Set(teamDoc.members.map((member) => String(member))))
+        : []
+      if (memberIds.length) {
+        await createNotifications(
+          db,
+          memberIds.map((memberId) => ({
+            userId: memberId,
+            type: "success",
+            message: `Your team earned $${award.amount.toFixed(2)} for place ${award.place} in ${tournament.title}`,
+            teamId: award.teamId,
+            metadata: { teamId: award.teamId, place: award.place, tournamentId },
+          }))
+        )
+      }
     }
   }
 

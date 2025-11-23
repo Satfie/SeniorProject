@@ -14,6 +14,7 @@ import {
   serializeJoinRequest,
   type JoinRequestDoc,
 } from "@/lib/team-service";
+import { createNotifications } from "@/lib/notification-service";
 
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
@@ -60,6 +61,29 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
       message,
     };
     await db.collection<JoinRequestDoc>("teamJoinRequests").insertOne(doc);
+    const requestId = normalizeId(doc._id);
+    const recipients = new Set<string>();
+    if (team.managerId) recipients.add(String(team.managerId));
+    if (Array.isArray(team.captainIds)) {
+      for (const cid of team.captainIds) {
+        if (cid) recipients.add(String(cid));
+      }
+    }
+    recipients.delete(user.id);
+    if (recipients.size) {
+      const actorLabel = user.username || user.email || user.id;
+      await createNotifications(
+        db,
+        Array.from(recipients).map((targetId) => ({
+          userId: targetId,
+          type: "action",
+          message: `New join request from ${actorLabel} for ${team.name}`,
+          teamId,
+          requestId,
+          metadata: { teamId, requestId, actorId: user.id },
+        }))
+      );
+    }
     return NextResponse.json(serializeJoinRequest(doc), { status: 201 });
   } catch (e: any) {
     if (e instanceof AuthServiceError) {

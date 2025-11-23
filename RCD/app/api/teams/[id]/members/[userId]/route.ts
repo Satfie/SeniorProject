@@ -14,6 +14,7 @@ import {
   type TeamDoc,
   type UserDoc,
 } from "@/lib/team-service";
+import { createNotification } from "@/lib/notification-service";
 
 export async function DELETE(
   req: NextRequest,
@@ -34,7 +35,8 @@ export async function DELETE(
     if (user.id !== managerId && user.role !== "admin") {
       return NextResponse.json({ message: "forbidden" }, { status: 403 });
     }
-    await req.json().catch(() => ({})); // Accept optional reason payload for future use
+    const payload = await req.json().catch(() => ({}));
+    const reason = typeof payload?.reason === "string" ? payload.reason.trim() : "";
     const teamId = normalizeId(team._id);
     const teamsCol = db.collection<TeamDoc>("teams");
     const pullValue = userId;
@@ -51,6 +53,13 @@ export async function DELETE(
       { ...buildIdFilter(userId), teamId },
       { $unset: { teamId: "" } }
     );
+    await createNotification(db, {
+      userId,
+      type: "warning",
+      message: reason || `You were removed from team ${team.name}`,
+      teamId,
+      metadata: { teamId, actorId: user.id },
+    });
     return NextResponse.json({ success: true });
   } catch (error: any) {
     if (error instanceof AuthServiceError) {
