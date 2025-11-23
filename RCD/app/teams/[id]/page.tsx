@@ -290,10 +290,10 @@ export default function TeamDetailPage() {
                         >
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
-                              {member.email.charAt(0).toUpperCase()}
+                              {member.email ? member.email.charAt(0).toUpperCase() : "?"}
                             </div>
                             <div>
-                              <p className="font-medium">{member.email}</p>
+                              <p className="font-medium">{member.email || "(no email)"}</p>
                               <div className="flex gap-2 mt-0.5">
                                 <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-white/5 border-white/10 capitalize">
                                   {member.role}

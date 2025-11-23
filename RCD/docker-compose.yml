@@ -34,6 +34,7 @@ services:
       - MONGO_URI=mongodb://mongo:27017/rcd
       - PORT=3002
       - FRONTEND_ORIGIN=http://localhost:8080,http://localhost:3000
+      - JWT_SECRET=dev_super_secret_jwt
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
