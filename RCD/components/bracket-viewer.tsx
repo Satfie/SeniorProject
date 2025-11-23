@@ -19,6 +19,7 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
   const [reportingMatch, setReportingMatch] = useState<Match | null>(null);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [overrideMatch, setOverrideMatch] = useState<Match | null>(null);
+  const [resettingMatch, setResettingMatch] = useState<Match | null>(null);
   const [overrideWinner, setOverrideWinner] = useState<string>("");
   const score1Ref = useRef<HTMLInputElement | null>(null);
   const score2Ref = useRef<HTMLInputElement | null>(null);
@@ -81,8 +82,15 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
     }
   };
 
-  const performReset = async () => {
-    // No longer used; kept as noop placeholder if referenced
+  const confirmReset = async () => {
+    if (!resettingMatch) return;
+    try {
+      await api.resetMatch(tournamentId, resettingMatch.id);
+      toast.success("Match reset");
+      setResettingMatch(null);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to reset match");
+    }
   };
 
   if (!bracket) return <div className="text-sm text-muted-foreground">No bracket yet.</div>;
@@ -149,7 +157,7 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
                             </Button>
                           )}
                         {isAdmin && m.status === "completed" && (
-                          <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div className="grid grid-cols-3 gap-2 mt-2">
                             <Button
                               size="sm"
                               variant="ghost"
@@ -166,6 +174,13 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
                               }}
                             >
                               Override
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => setResettingMatch(m)}
+                            >
+                              Reset
                             </Button>
                           </div>
                         )}
@@ -352,6 +367,35 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
                   }}
                 >
                   Save
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Match Confirmation */}
+      <Dialog open={!!resettingMatch} onOpenChange={(o) => !o && setResettingMatch(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Match Result</DialogTitle>
+          </DialogHeader>
+          {resettingMatch && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                This will clear scores and winner for
+                {" "}
+                <span className="font-medium">
+                  {nameFor(resettingMatch.team1Id)} vs {nameFor(resettingMatch.team2Id)}
+                </span>
+                . Downstream matches stay untouched, so only use this before results propagate.
+              </p>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setResettingMatch(null)}>
+                  Cancel
+                </Button>
+                <Button variant="destructive" onClick={confirmReset}>
+                  Confirm Reset
                 </Button>
               </DialogFooter>
             </div>
