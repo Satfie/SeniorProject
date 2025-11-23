@@ -3,6 +3,16 @@ import { buildIdFilter, normalizeId } from "@/lib/team-service"
 
 type NotificationType = "info" | "warning" | "success" | "action"
 
+export type NotificationMetadata = {
+  path?: string
+  actionLabel?: string
+  teamId?: string
+  requestId?: string
+  actorId?: string
+  tournamentId?: string
+  [key: string]: unknown
+}
+
 export type NotificationDoc = {
   _id: ObjectId | string
   userId: string
@@ -12,7 +22,21 @@ export type NotificationDoc = {
   read?: boolean
   teamId?: string
   requestId?: string
-  metadata?: Record<string, unknown>
+  metadata?: NotificationMetadata
+}
+
+export type Notification = {
+  id: string
+  userId: string
+  type: NotificationType
+  message: string
+  createdAt: string
+  read: boolean
+  metadata?: NotificationMetadata
+  teamId?: string
+  requestId?: string
+  actionPath?: string
+  actionLabel?: string
 }
 
 const COLLECTION = "notifications"
@@ -20,8 +44,6 @@ const COLLECTION = "notifications"
 function nowIso() {
   return new Date().toISOString()
 }
-
-export type Notification = ReturnType<typeof serializeNotification>
 
 type NotificationEvent = {
   kind: "created"
@@ -76,27 +98,40 @@ export function serializeNotification(doc: NotificationDoc) {
   const baseMetadata: Record<string, unknown> | undefined = doc.metadata
     ? { ...doc.metadata }
     : undefined
-  if (doc.teamId || doc.requestId) {
-    if (baseMetadata) {
-      if (doc.teamId && !baseMetadata.teamId) baseMetadata.teamId = doc.teamId
-      if (doc.requestId && !baseMetadata.requestId) baseMetadata.requestId = doc.requestId
-    } else {
-      const next: Record<string, unknown> = {}
-      if (doc.teamId) next.teamId = doc.teamId
-      if (doc.requestId) next.requestId = doc.requestId
-      return {
-        id: normalizeId(doc._id),
-        userId: doc.userId,
-        type: doc.type || "info",
-        message: doc.message,
-        createdAt: doc.createdAt,
-        read: !!doc.read,
-        metadata: next,
-        teamId: doc.teamId,
-        requestId: doc.requestId,
+  let metadata: NotificationMetadata | undefined = doc.metadata
+    ? { ...doc.metadata }
+    : undefined
+
+  const ensureMetadata = (key: keyof NotificationMetadata, value?: unknown) => {
+    if (value === undefined || value === null) return
+    if (metadata) {
+      if (metadata[key] === undefined) {
+        metadata[key] = value as any
       }
+    } else {
+      metadata = { [key]: value } as NotificationMetadata
     }
   }
+
+  ensureMetadata("teamId", doc.teamId)
+  ensureMetadata("requestId", doc.requestId)
+
+  const actionPath =
+    typeof metadata?.path === "string"
+      ? metadata.path
+      : doc.teamId
+      ? `/teams/${doc.teamId}`
+      : undefined
+
+  const actionLabel =
+    typeof metadata?.actionLabel === "string"
+      ? metadata.actionLabel
+      : actionPath?.startsWith("/tournaments/")
+      ? "View Tournament"
+      : actionPath?.startsWith("/teams/")
+      ? "View Team"
+      : undefined
+
   return {
     id: normalizeId(doc._id),
     userId: doc.userId,
@@ -104,9 +139,11 @@ export function serializeNotification(doc: NotificationDoc) {
     message: doc.message,
     createdAt: doc.createdAt,
     read: !!doc.read,
-    metadata: baseMetadata,
+    metadata,
     teamId: doc.teamId,
     requestId: doc.requestId,
+    actionPath,
+    actionLabel,
   }
 }
 
