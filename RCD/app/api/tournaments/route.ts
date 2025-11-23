@@ -1,44 +1,21 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+
+import { getDb } from "@/lib/db";
 import {
-  addTournament,
-  tournaments as mockTournaments,
-  registerForTournament,
-} from "../_mockData";
+  AuthServiceError,
+  normalizeAuthServiceError,
+  requireAuthUser,
+} from "@/lib/auth-service";
+import { createTournament, listTournaments } from "@/lib/tournament-service";
 
-type PandaTournament = {
-  id: number;
-  name: string;
-  begin_at: string | null;
-  end_at: string | null;
-  status?: string;
-};
-
-function mapStatus(s?: string): "upcoming" | "ongoing" | "completed" {
-  switch ((s || "").toLowerCase()) {
-    case "running":
-    case "in_progress":
-      return "ongoing";
-    case "finished":
-    case "completed":
-      return "completed";
-    default:
-      return "upcoming";
-  }
+export async function GET() {
+  const db = await getDb();
+  const tournaments = await listTournaments(db);
+  return NextResponse.json(tournaments);
 }
 
-// Switch to in-memory mock tournaments to support admin CRUD while keeping shape consistent
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{}> }
-) {
-  return NextResponse.json(mockTournaments);
-}
-
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{}> }
-) {
+export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   if (!body?.title || !body?.date) {
     return NextResponse.json(
@@ -46,25 +23,28 @@ export async function POST(
       { status: 400 }
     );
   }
-  const t = addTournament(body);
-  return NextResponse.json(t, { status: 201 });
+  try {
+    const { user } = await requireAuthUser(req);
+    if (user.role !== "admin") {
+      return NextResponse.json({ message: "forbidden" }, { status: 403 });
+    }
+    const db = await getDb();
+    const tournament = await createTournament(db, body);
+    return NextResponse.json(tournament, { status: 201 });
+  } catch (error: any) {
+    if (error instanceof AuthServiceError) {
+      const { status, payload } = normalizeAuthServiceError(error);
+      return NextResponse.json(payload, { status });
+    }
+    console.error("[tournaments] POST failed", error);
+    return NextResponse.json(
+      { message: error?.message || "Failed to create tournament" },
+      { status: 500 }
+    );
+  }
 }
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{}> }
-) {
-  // Optional bulk/utility action: register endpoint passthrough
-  const body = await req.json().catch(() => ({}));
-  if (body?.register && body?.id) {
-    const ok = registerForTournament(String(body.id));
-    if (!ok)
-      return NextResponse.json(
-        { message: "Not found or full" },
-        { status: 400 }
-      );
-    return NextResponse.json({ success: true });
-  }
+export async function PATCH() {
   return NextResponse.json(
     { message: "Unsupported operation" },
     { status: 400 }

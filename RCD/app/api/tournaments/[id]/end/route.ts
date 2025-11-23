@@ -1,19 +1,36 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { endTournamentAndPayout, getTournament } from "@/app/api/_mockData";
+import { NextResponse } from "next/server";
+
+import {
+  AuthServiceError,
+  normalizeAuthServiceError,
+  requireAuthUser,
+} from "@/lib/auth-service";
+import { getDb } from "@/lib/db";
+import { endTournamentAndPayout, getTournamentById } from "@/lib/tournament-service";
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
   try {
-    const payout = endTournamentAndPayout(id);
+    const { user } = await requireAuthUser(req);
+    if (user.role !== "admin") {
+      return NextResponse.json({ message: "forbidden" }, { status: 403 });
+    }
+    const db = await getDb();
+    const payout = await endTournamentAndPayout(db, id);
     return NextResponse.json(payout);
-  } catch (e: any) {
+  } catch (error: any) {
+    if (error instanceof AuthServiceError) {
+      const { status, payload } = normalizeAuthServiceError(error);
+      return NextResponse.json(payload, { status });
+    }
+    const status = /tournament|payout|final/i.test(error?.message || "") ? 400 : 500;
     return NextResponse.json(
-      { message: e?.message || "Failed to end tournament" },
-      { status: 400 }
+      { message: error?.message || "Failed to end tournament" },
+      { status }
     );
   }
 }
@@ -24,8 +41,10 @@ export async function GET(
 ) {
   // Read-only view of payout if already done
   const { id } = await context.params;
-  const t = getTournament(id);
+  const db = await getDb();
+  const t = await getTournamentById(db, id);
   if (!t) return NextResponse.json({ message: "Tournament not found" }, { status: 404 });
-  if (!t.payout) return NextResponse.json({ message: "Payout not completed" }, { status: 404 });
+  if (!t.payout)
+    return NextResponse.json({ message: "Payout not completed" }, { status: 404 });
   return NextResponse.json(t.payout);
 }

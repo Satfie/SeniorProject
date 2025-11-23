@@ -1,6 +1,7 @@
-import { getBracket, subscribeBracket } from "@/app/api/_mockData";
+import { getDb } from "@/lib/db";
+import { getBracket, subscribeBracketUpdates } from "@/lib/tournament-service";
 
-function serializeBracket(bracket: any) {
+function serializeBracket(bracket: unknown) {
   return `event: bracket\ndata: ${JSON.stringify(bracket)}\n\n`;
 }
 
@@ -9,27 +10,26 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-  const bracket = getBracket(id);
+  const db = await getDb();
+  const bracket = await getBracket(db, id);
 
   const stream = new ReadableStream({
     start(controller) {
-      // Track active state so we stop enqueuing once the stream is closed/aborted.
       let active = true;
-
       const encoder = new TextEncoder();
+
       const safeEnqueue = (payload: string) => {
         if (!active) return;
         try {
           controller.enqueue(encoder.encode(payload));
-        } catch (err) {
-          // Controller closed; perform cleanup and mark inactive to prevent future attempts.
+        } catch {
           active = false;
           cleanup();
         }
       };
 
       const cleanup = () => {
-        if (!active) return; // idempotent safety
+        if (!active) return;
         active = false;
         if (unsubscribe) unsubscribe();
         if (interval) clearInterval(interval);
@@ -39,20 +39,17 @@ export async function GET(
         safeEnqueue(serializeBracket(bracket));
       }
 
-      const unsubscribe = subscribeBracket(id, (b) => {
-        safeEnqueue(serializeBracket(b));
+      const unsubscribe = subscribeBracketUpdates(id, (payload) => {
+        safeEnqueue(serializeBracket(payload));
       });
 
       const interval = setInterval(() => {
         safeEnqueue(`: ping\n\n`);
       }, 15000);
 
-      // Expose cleanup parts to cancel() via controller instance
-      (controller as any).unsubscribe = unsubscribe;
-      (controller as any).interval = interval;
       (controller as any).cleanup = cleanup;
     },
-    cancel(reason) {
+    cancel() {
       const cleanup = (this as any).cleanup;
       if (cleanup) cleanup();
     },

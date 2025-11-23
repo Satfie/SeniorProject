@@ -1,49 +1,114 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+
+import { getDb } from "@/lib/db";
 import {
-  getTournament,
+  AuthServiceError,
+  normalizeAuthServiceError,
+  requireAuthUser,
+} from "@/lib/auth-service";
+import {
+  deleteTournament,
+  getTournamentById,
+  serializeTournament,
   updateTournament,
-  removeTournament,
-} from "../../_mockData";
+} from "@/lib/tournament-service";
 
 export async function GET(
   _req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-  const t = getTournament(id);
-  if (!t) return NextResponse.json({ message: "Not found" }, { status: 404 });
-  return NextResponse.json(t);
+  const db = await getDb();
+  const doc = await getTournamentById(db, id);
+  if (!doc) return NextResponse.json({ message: "Not found" }, { status: 404 });
+  return NextResponse.json(serializeTournament(doc));
+}
+
+async function requireAdmin(req: NextRequest) {
+  const auth = await requireAuthUser(req);
+  if (auth.user.role !== "admin") {
+    throw new AuthServiceError("forbidden", 403);
+  }
+  return auth;
 }
 
 export async function PUT(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const body = await req.json().catch(() => ({}));
   const { id } = await context.params;
-  const t = updateTournament(id, body);
-  if (!t) return NextResponse.json({ message: "Not found" }, { status: 404 });
-  return NextResponse.json(t);
+  const body = await req.json().catch(() => ({}));
+  try {
+    await requireAdmin(req);
+    const db = await getDb();
+    const updated = await updateTournament(db, id, body);
+    if (!updated) {
+      return NextResponse.json({ message: "Not found" }, { status: 404 });
+    }
+    return NextResponse.json(updated);
+  } catch (error: any) {
+    if (error instanceof AuthServiceError) {
+      const { status, payload } = normalizeAuthServiceError(error);
+      return NextResponse.json(payload, { status });
+    }
+    console.error("[tournaments:id] PUT failed", error);
+    return NextResponse.json(
+      { message: error?.message || "Failed to update tournament" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PATCH(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const body = await req.json().catch(() => ({}));
   const { id } = await context.params;
-  const t = updateTournament(id, body);
-  if (!t) return NextResponse.json({ message: "Not found" }, { status: 404 });
-  return NextResponse.json(t);
+  const body = await req.json().catch(() => ({}));
+  try {
+    await requireAdmin(req);
+    const db = await getDb();
+    const updated = await updateTournament(db, id, body);
+    if (!updated) {
+      return NextResponse.json({ message: "Not found" }, { status: 404 });
+    }
+    return NextResponse.json(updated);
+  } catch (error: any) {
+    if (error instanceof AuthServiceError) {
+      const { status, payload } = normalizeAuthServiceError(error);
+      return NextResponse.json(payload, { status });
+    }
+    console.error("[tournaments:id] PATCH failed", error);
+    return NextResponse.json(
+      { message: error?.message || "Failed to update tournament" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-  const ok = removeTournament(id);
-  if (!ok) return NextResponse.json({ message: "Not found" }, { status: 404 });
-  return NextResponse.json({ success: true });
+  try {
+    await requireAdmin(req);
+    const db = await getDb();
+    const removed = await deleteTournament(db, id);
+    if (!removed) {
+      return NextResponse.json({ message: "Not found" }, { status: 404 });
+    }
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    if (error instanceof AuthServiceError) {
+      const { status, payload } = normalizeAuthServiceError(error);
+      return NextResponse.json(payload, { status });
+    }
+    console.error("[tournaments:id] DELETE failed", error);
+    return NextResponse.json(
+      { message: error?.message || "Failed to delete tournament" },
+      { status: 500 }
+    );
+  }
 }
