@@ -16,7 +16,7 @@ interface AuthContextType {
   loading: boolean
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string, username?: string) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
   refreshUser: () => Promise<void>
   isAdmin: boolean
   isTeamManager: boolean
@@ -31,11 +31,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async (): Promise<void> => {
     try {
       const currentUser = await api.getCurrentUser();
       setUser(currentUser);
-    } catch (error) {
+    } catch {
       setUser(null);
       if (typeof window !== "undefined") {
         localStorage.removeItem("rcd_token");
@@ -43,23 +43,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined" && localStorage.getItem("rcd_token")) {
-      fetchUser();
+      void fetchUser();
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [fetchUser]);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     const { user: loggedInUser } = await api.login(email, password);
     setUser(loggedInUser);
     router.push("/dashboard");
-  };
+  }, [router]);
 
-  const register = async (
+  const register = useCallback(async (
     email: string,
     password: string,
     username?: string
@@ -71,22 +71,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
     setUser(registeredUser);
     router.push("/dashboard");
-  };
+  }, [router]);
 
-  const logout = () => {
-    api.logout();
-    setUser(null);
-    router.push("/");
-  };
+  const logout = useCallback(async () => {
+    try {
+      await api.logout();
+    } finally {
+      setUser(null);
+      router.push("/");
+    }
+  }, [router]);
 
-  const refreshUser = async () => {
-    await fetchUser();
-  };
+  const refreshUser = useCallback(() => {
+    return fetchUser();
+  }, [fetchUser]);
 
   // Listen for team approval event to refresh user (updates teamId immediately after notification)
   const handleTeamApproved = useCallback(() => {
-    refreshUser();
-  }, []);
+    void refreshUser();
+  }, [refreshUser]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

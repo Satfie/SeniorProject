@@ -198,8 +198,8 @@ export function NotificationsProvider({
       setLoading(false);
     }
   }, [API_BASE, isReal]);
-  const refresh = useCallback(async () => {
-    await load();
+  const refresh = useCallback(() => {
+    return load();
   }, [load]);
 
   const markAllRead = useCallback(async () => {
@@ -213,7 +213,7 @@ export function NotificationsProvider({
   }, [API_BASE, isReal]);
 
   useEffect(() => {
-    load();
+    void load();
     if (typeof window === "undefined") return;
     const token = localStorage.getItem("rcd_token");
     let cleanup: (() => void) | undefined;
@@ -250,7 +250,7 @@ export function NotificationsProvider({
       };
       connect();
       const fallback = setInterval(() => {
-        load();
+        void load();
       }, 5 * 60_000);
       cleanup = () => {
         stopped = true;
@@ -261,7 +261,9 @@ export function NotificationsProvider({
       };
       return cleanup;
     } else {
-      const interval = setInterval(load, 15000);
+      const interval = setInterval(() => {
+        void load();
+      }, 15000);
       cleanup = () => clearInterval(interval);
       return cleanup;
     }

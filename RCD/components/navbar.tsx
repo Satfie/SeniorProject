@@ -1,8 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   Bell,
   ChevronDown,
@@ -72,9 +71,13 @@ function ThemeToggle() {
   );
 }
 
+type ManagerJoinRequest = JoinRequest & {
+  team?: { name?: string | null } | null;
+  user?: { email?: string | null } | null;
+};
+
 export function Navbar() {
   const { user, logout, isAdmin } = useAuth()
-  const router = useRouter();
   const {
     notifications,
     unreadCount,
@@ -88,7 +91,7 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [managerRequests, setManagerRequests] = useState<Array<JoinRequest & { team?: any; user?: any }>>([])
+  const [managerRequests, setManagerRequests] = useState<ManagerJoinRequest[]>([])
   const [managerUnread, setManagerUnread] = useState(0)
 
   const notificationsRef = useRef<HTMLDivElement | null>(null);
@@ -114,9 +117,13 @@ export function Navbar() {
 
   // Poll manager join requests
   useEffect(() => {
-    let interval: any;
+    if (!user || user.role !== "team_manager") {
+      setManagerRequests([]);
+      setManagerUnread(0);
+      return;
+    }
+
     const load = async () => {
-      if (!user || user.role !== 'team_manager') return;
       try {
         const data = await api.getManagerJoinRequests();
         setManagerRequests(data);
@@ -126,13 +133,29 @@ export function Navbar() {
         setManagerUnread(0);
       }
     };
-    load();
-    interval = setInterval(load, 15000);
-    return () => interval && clearInterval(interval);
+
+    void load();
+    const intervalId = setInterval(() => {
+      void load();
+    }, 15000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
   }, [user]);
 
+  const handleManagerRequest = useCallback(async (request: ManagerJoinRequest, action: "approve" | "decline") => {
+    if (action === "approve") {
+      await api.approveJoinRequest(request.teamId, request.id);
+    } else {
+      await api.declineJoinRequest(request.teamId, request.id);
+    }
+    setManagerRequests((prev) => prev.filter((x) => x.id !== request.id));
+    setManagerUnread((prev) => Math.max(0, prev - 1));
+  }, []);
+
   const handleLogout = () => {
-    logout();
+    void logout();
     setProfileOpen(false);
     setNotificationsOpen(false);
     setMobileMenuOpen(false);
@@ -178,7 +201,10 @@ export function Navbar() {
                     className="flex items-center gap-2 px-3 py-1 text-sm hover:bg-primary/10 transition-colors"
                     onClick={() => {
                       setNotificationsOpen((prev) => !prev);
-                      refresh().then(() => markAllRead());
+                      void (async () => {
+                        await refresh();
+                        await markAllRead();
+                      })();
                     }}
                     aria-expanded={notificationsOpen}
                     aria-haspopup="true"
@@ -204,7 +230,9 @@ export function Navbar() {
                             variant="ghost"
                             size="sm"
                             className="h-7 px-2 text-xs hover:text-primary"
-                            onClick={refresh}
+                            onClick={() => {
+                              void refresh();
+                            }}
                           >
                             Refresh
                           </Button>
@@ -212,7 +240,9 @@ export function Navbar() {
                             variant="ghost"
                             size="sm"
                             className="h-7 px-2 text-xs hover:text-destructive"
-                            onClick={clearAll}
+                            onClick={() => {
+                              void clearAll();
+                            }}
                           >
                             Clear
                           </Button>
@@ -240,15 +270,8 @@ export function Navbar() {
                                     <Button
                                       size="sm"
                                       className="h-6 px-2 text-xs w-full bg-green-600 hover:bg-green-700 text-white"
-                                      onClick={async () => {
-                                        await api.approveJoinRequest(
-                                          r.teamId,
-                                          r.id
-                                        );
-                                        setManagerRequests((prev) =>
-                                          prev.filter((x) => x.id !== r.id)
-                                        );
-                                        setManagerUnread((u) => u - 1);
+                                      onClick={() => {
+                                        void handleManagerRequest(r, "approve");
                                       }}
                                     >
                                       Approve
@@ -257,15 +280,8 @@ export function Navbar() {
                                       size="sm"
                                       variant="ghost"
                                       className="h-6 px-2 text-xs w-full hover:bg-destructive/10 hover:text-destructive"
-                                      onClick={async () => {
-                                        await api.declineJoinRequest(
-                                          r.teamId,
-                                          r.id
-                                        );
-                                        setManagerRequests((prev) =>
-                                          prev.filter((x) => x.id !== r.id)
-                                        );
-                                        setManagerUnread((u) => u - 1);
+                                      onClick={() => {
+                                        void handleManagerRequest(r, "decline");
                                       }}
                                     >
                                       Decline
@@ -412,7 +428,7 @@ export function Navbar() {
                 aria-label="Notifications"
                 onClick={() => {
                   setNotificationsOpen((prev) => !prev);
-                  refresh();
+                  void refresh();
                 }}
                 className="relative rounded-full"
               >
@@ -516,7 +532,9 @@ export function Navbar() {
                       variant="ghost"
                       size="sm"
                       className="h-7 px-2 text-xs"
-                      onClick={refresh}
+                      onClick={() => {
+                        void refresh();
+                      }}
                     >
                       Refresh
                     </Button>
@@ -524,7 +542,9 @@ export function Navbar() {
                       variant="ghost"
                       size="sm"
                       className="h-7 px-2 text-xs"
-                      onClick={clearAll}
+                      onClick={() => {
+                        void clearAll();
+                      }}
                     >
                       Clear
                     </Button>
