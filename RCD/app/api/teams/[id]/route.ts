@@ -1,15 +1,28 @@
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server";
-import { getTeam, teams } from "../../_mockData"
+import { NextRequest, NextResponse } from "next/server";
+import { getDb } from "@/lib/db";
+import {
+  AuthServiceError,
+  normalizeAuthServiceError,
+  requireAuthUser,
+} from "@/lib/auth-service";
+import {
+  buildIdFilter,
+  findTeamById,
+  hydrateTeam,
+  normalizeId,
+  type TeamDoc,
+} from "@/lib/team-service";
 
 export async function GET(
   _req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-  const team = getTeam(id);
-  if (!team)
+  const db = await getDb();
+  const teamDoc = await findTeamById(db, id);
+  if (!teamDoc)
     return NextResponse.json({ message: "Not found" }, { status: 404 });
+  const team = await hydrateTeam(db, teamDoc);
   return NextResponse.json(team);
 }
 
@@ -18,19 +31,44 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-  const team = getTeam(id);
-  if (!team)
-    return NextResponse.json({ message: "Not found" }, { status: 404 });
-  const auth = req.headers.get("authorization") || "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
-  const isCaptain = !!(team.captainIds && token && team.captainIds.includes(token));
-  const isManager = token === team.managerId;
-  if (!isManager && !isCaptain) {
-    return NextResponse.json({ message: "forbidden" }, { status: 403 });
-  }
   const body = await req.json().catch(() => ({}));
-  const { name, tag } = body || {};
-  if (typeof name === "string" && name.trim()) team.name = name.trim();
-  if (typeof tag === "string") team.tag = tag.trim();
-  return NextResponse.json(team);
+  const name = typeof body?.name === "string" ? body.name.trim() : undefined;
+  const tag = typeof body?.tag === "string" ? body.tag.trim() : undefined;
+  if (!name && typeof tag === "undefined") {
+    return NextResponse.json({ message: "No changes provided" }, { status: 400 });
+  }
+  try {
+    const { user } = await requireAuthUser(req);
+    const db = await getDb();
+    const team = await findTeamById(db, id);
+    if (!team)
+      return NextResponse.json({ message: "Not found" }, { status: 404 });
+    const managerId = String(team.managerId);
+    const captains = Array.isArray(team.captainIds)
+      ? team.captainIds.map(String)
+      : [];
+    const isManager = managerId === user.id;
+    const isCaptain = captains.includes(user.id);
+    if (!isManager && !isCaptain) {
+      return NextResponse.json({ message: "forbidden" }, { status: 403 });
+    }
+    const updates: Partial<TeamDoc> = {};
+    if (name) updates.name = name;
+    if (typeof tag !== "undefined") updates.tag = tag || undefined;
+    if (Object.keys(updates).length) {
+      await db
+        .collection<TeamDoc>("teams")
+        .updateOne(buildIdFilter(normalizeId(team._id)), { $set: updates });
+    }
+    const refreshed = await findTeamById(db, id);
+    const payload = await hydrateTeam(db, refreshed);
+    return NextResponse.json(payload);
+  } catch (e: any) {
+    if (e instanceof AuthServiceError) {
+      const { status, payload } = normalizeAuthServiceError(e);
+      return NextResponse.json(payload, { status });
+    }
+    const code = /duplicate key/i.test(e?.message) ? 409 : 500;
+    return NextResponse.json({ message: e?.message || "Server error" }, { status: code });
+  }
 }

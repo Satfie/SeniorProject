@@ -32,6 +32,8 @@ async function ensureIndexes(db: Db) {
   await db.collection('teams').createIndex({ managerId: 1 })
   await db.collection('teams').createIndex({ name: 1 }, { unique: true })
   await db.collection('tournaments').createIndex({ status: 1 })
+  await db.collection('teamJoinRequests').createIndex({ teamId: 1, status: 1 })
+  await db.collection('teamJoinRequests').createIndex({ teamId: 1, userId: 1, status: 1 })
 }
 
 async function seedIfEmpty(db: Db) {
@@ -40,7 +42,7 @@ async function seedIfEmpty(db: Db) {
   const userCount = await usersCol.countDocuments()
   if (userCount === 0) {
     const now = new Date().toISOString()
-    const users = [
+    const users: any[] = [
       { _id: '1', email: 'owner@example.com', role: 'team_manager', username: 'owner', createdAt: now },
       { _id: '2', email: 'player1@example.com', role: 'player', username: 'player1', createdAt: now },
       { _id: '3', email: 'player2@example.com', role: 'player', username: 'player2', createdAt: now },
@@ -51,10 +53,11 @@ async function seedIfEmpty(db: Db) {
   const teamCount = await teamsCol.countDocuments()
   if (teamCount === 0) {
     const now = new Date().toISOString()
-    await teamsCol.insertMany([
+    const teamsSeed: any[] = [
       { _id: 't1', name: 'RCD Legends', tag: 'RCD', managerId: '1', members: ['1','2','3'], captainIds: [], createdAt: now },
       { _id: 't2', name: 'Shadow Clan', tag: 'SHDW', managerId: '4', members: ['4','3'], captainIds: [], createdAt: now }
-    ])
+    ]
+    await teamsCol.insertMany(teamsSeed)
   }
 }
 

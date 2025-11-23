@@ -1,3 +1,6 @@
+import type { NextRequest } from "next/server"
+import type { User } from "@/lib/api"
+
 const AUTH_SERVICE_ENV_KEYS = [
   "AUTH_SERVICE_URL",
   "RCD_AUTH_SERVICE_URL",
@@ -102,4 +105,33 @@ export function normalizeAuthServiceError(error: unknown) {
     status: 502,
     payload: { message: "Authentication service unavailable" },
   }
+}
+
+function extractBearerToken(headerValue: string | null) {
+  if (!headerValue) return null
+  const trimmed = headerValue.trim()
+  if (!trimmed.toLowerCase().startsWith("bearer ")) return null
+  const token = trimmed.slice(7).trim()
+  return token || null
+}
+
+export function getAuthToken(req: NextRequest): string | null {
+  return extractBearerToken(req.headers.get("authorization"))
+}
+
+export async function fetchAuthUserForToken(token: string): Promise<User> {
+  return authServiceRequest<User>("/api/auth/me", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export async function requireAuthUser(req: NextRequest) {
+  const token = getAuthToken(req)
+  if (!token) {
+    throw new AuthServiceError("Unauthorized", 401)
+  }
+  const user = await fetchAuthUserForToken(token)
+  return { token, user }
 }
