@@ -21,6 +21,46 @@ function nowIso() {
   return new Date().toISOString()
 }
 
+export type Notification = ReturnType<typeof serializeNotification>
+
+type NotificationEvent = {
+  kind: "created"
+  notification: Notification
+}
+
+const subscribers = new Map<string, Set<(event: NotificationEvent) => void>>()
+
+function broadcast(userId: string, event: NotificationEvent) {
+  const set = subscribers.get(userId)
+  if (!set || !set.size) return
+  set.forEach((handler) => {
+    try {
+      handler(event)
+    } catch (error) {
+      console.error("[notification-service] subscriber error", error)
+    }
+  })
+}
+
+export function subscribeToNotifications(
+  userId: string,
+  handler: (event: NotificationEvent) => void
+) {
+  if (!subscribers.has(userId)) {
+    subscribers.set(userId, new Set())
+  }
+  const set = subscribers.get(userId)!
+  set.add(handler)
+  return () => {
+    const current = subscribers.get(userId)
+    if (!current) return
+    current.delete(handler)
+    if (!current.size) {
+      subscribers.delete(userId)
+    }
+  }
+}
+
 export type NotificationPayload = {
   userId: string
   type?: NotificationType
@@ -93,7 +133,9 @@ export async function createNotification(db: Db, payload: NotificationPayload) {
     metadata: payload.metadata,
   }
   await db.collection<NotificationDoc>(COLLECTION).insertOne(doc as any)
-  return serializeNotification(doc)
+  const serialized = serializeNotification(doc)
+  broadcast(doc.userId, { kind: "created", notification: serialized })
+  return serialized
 }
 
 export async function createNotifications(db: Db, payloads: NotificationPayload[]) {
@@ -110,6 +152,10 @@ export async function createNotifications(db: Db, payloads: NotificationPayload[
     metadata: payload.metadata,
   }))
   await db.collection<NotificationDoc>(COLLECTION).insertMany(docs as any)
+  docs.forEach((doc) => {
+    const serialized = serializeNotification(doc)
+    broadcast(doc.userId, { kind: "created", notification: serialized })
+  })
 }
 
 export async function clearNotifications(db: Db, userId: string) {
