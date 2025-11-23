@@ -240,7 +240,9 @@ export function NotificationsProvider({
           retryMs = 2000;
         };
         source.onerror = () => {
-          try { source && source.close(); } catch {}
+          try {
+            if (source) source.close();
+          } catch {}
           if (stopped) return;
           setTimeout(connect, retryMs);
           retryMs = Math.min(retryMs * 2, 15000);
@@ -252,7 +254,9 @@ export function NotificationsProvider({
       }, 5 * 60_000);
       cleanup = () => {
         stopped = true;
-        try { source && source.close(); } catch {}
+        try {
+          if (source) source.close();
+        } catch {}
         clearInterval(fallback);
       };
       return cleanup;
