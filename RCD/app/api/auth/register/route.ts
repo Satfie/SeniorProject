@@ -1,21 +1,32 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { addUser } from "../../_mockData";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{}> }
-) {
-  const body = await req.json().catch(() => ({}));
+import { authServiceRequest, normalizeAuthServiceError } from "@/lib/auth-service";
+import type { User } from "@/lib/api";
+
+export async function POST(req: NextRequest) {
+  const body = await req.json().catch(() => null);
   const email = body?.email as string | undefined;
-  const password = body?.password as string | undefined; // ignored for mock
-  const username = body?.username as string | undefined;
-  if (!email || !password)
+  const password = body?.password as string | undefined;
+  const username = (body?.username as string | undefined)?.trim();
+
+  if (!email || !password || !username) {
     return NextResponse.json(
-      { message: "email and password required" },
+      { message: "email, username, and password required" },
       { status: 400 }
     );
-  const user = addUser(email, password, username);
-  // Return mock token (user id) and user object
-  return NextResponse.json({ token: user.id, user });
+  }
+
+  try {
+    const payload = await authServiceRequest<{ token: string; user: User }>(
+      "/api/auth/register",
+      {
+        method: "POST",
+        body: JSON.stringify({ email, password, username }),
+      }
+    );
+    return NextResponse.json(payload, { status: 201 });
+  } catch (error) {
+    const { status, payload } = normalizeAuthServiceError(error);
+    return NextResponse.json(payload, { status });
+  }
 }

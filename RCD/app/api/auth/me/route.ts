@@ -1,13 +1,23 @@
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
-import { users } from "../../_mockData"
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{}> }) {
-  console.log("GET /api/auth/me called")
-  const auth = req.headers.get("authorization") || ""
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null
-  if (!token) return NextResponse.json({ message: "unauthorized" }, { status: 401 })
-  const user = users.find((u) => u.id === token)
-  if (!user) return NextResponse.json({ message: "unauthorized" }, { status: 401 })
-  return NextResponse.json(user)
+import { authServiceRequest, normalizeAuthServiceError } from "@/lib/auth-service";
+import type { User } from "@/lib/api";
+
+export async function GET(req: NextRequest) {
+  const auth = req.headers.get("authorization") || "";
+  if (!auth?.startsWith("Bearer ")) {
+    return NextResponse.json({ message: "unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const user = await authServiceRequest<User>("/api/auth/me", {
+      headers: {
+        Authorization: auth,
+      },
+    });
+    return NextResponse.json(user);
+  } catch (error) {
+    const { status, payload } = normalizeAuthServiceError(error);
+    return NextResponse.json(payload, { status });
+  }
 }
