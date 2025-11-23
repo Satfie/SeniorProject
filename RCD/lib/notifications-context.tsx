@@ -16,8 +16,10 @@ export type Notification = {
   message: string;
   createdAt: string;
   actionLabel?: string;
+  actionPath?: string;
   onAction?: () => void;
   read?: boolean;
+  metadata?: Record<string, unknown>;
 };
 
 type NotificationsContextValue = {
@@ -33,7 +35,9 @@ type NotificationsContextValue = {
     id?: string;
     createdAt?: string | number;
     actionLabel?: string;
+    actionPath?: string;
     onAction?: () => void;
+    metadata?: Record<string, unknown>;
   }) => void;
 };
 
@@ -45,6 +49,68 @@ function uuid() {
   if (typeof crypto !== "undefined" && crypto.randomUUID)
     return crypto.randomUUID();
   return Math.random().toString(36).slice(2);
+}
+
+function deriveActionPath(payload: any): string | undefined {
+  if (typeof payload?.actionPath === "string" && payload.actionPath.length > 0) {
+    return payload.actionPath;
+  }
+  if (typeof payload?.metadata?.path === "string" && payload.metadata.path.length > 0) {
+    return payload.metadata.path;
+  }
+  const teamId = payload?.metadata?.teamId || payload?.teamId;
+  if (typeof teamId === "string" && teamId.length > 0) {
+    return `/teams/${teamId}`;
+  }
+  const tournamentId = payload?.metadata?.tournamentId || payload?.tournamentId;
+  if (typeof tournamentId === "string" && tournamentId.length > 0) {
+    return `/tournaments/${tournamentId}`;
+  }
+  return undefined;
+}
+
+function deriveActionLabel(payload: any, actionPath?: string): string | undefined {
+  const directLabel =
+    typeof payload?.actionLabel === "string"
+      ? payload.actionLabel
+      : typeof payload?.metadata?.actionLabel === "string"
+      ? payload.metadata.actionLabel
+      : undefined;
+  if (directLabel) return directLabel;
+  if (!actionPath) return undefined;
+  if (actionPath.startsWith("/tournaments/")) return "View Tournament";
+  if (actionPath.startsWith("/teams/")) return "View Team";
+  if (actionPath.startsWith("/dashboard")) return "View Dashboard";
+  return undefined;
+}
+
+function buildOnAction(actionPath?: string, fallback?: () => void) {
+  if (typeof fallback === "function") return fallback;
+  if (!actionPath) return undefined;
+  return () => {
+    if (typeof window === "undefined") return;
+    window.location.href = actionPath;
+  };
+}
+
+function normalizeNotificationPayload(payload: any): Notification {
+  const id = String(payload?.id || payload?._id || uuid());
+  const createdAt = payload?.createdAt
+    ? new Date(payload.createdAt).toISOString()
+    : new Date().toISOString();
+  const actionPath = deriveActionPath(payload);
+  const actionLabel = deriveActionLabel(payload, actionPath);
+  return {
+    id,
+    type: (payload?.type as Notification["type"]) || "info",
+    message: payload?.message || "",
+    createdAt,
+    actionLabel,
+    actionPath,
+    onAction: buildOnAction(actionPath, payload?.onAction),
+    read: typeof payload?.read === "boolean" ? payload.read : false,
+    metadata: payload?.metadata,
+  };
 }
 
 export function NotificationsProvider({
@@ -82,21 +148,11 @@ export function NotificationsProvider({
   }, [API_BASE, isReal]);
   const addNotification: NotificationsContextValue["addNotification"] =
     useCallback((n) => {
-      const id = n.id || uuid();
-      const createdAt = n.createdAt
-        ? new Date(n.createdAt).toISOString()
-        : new Date().toISOString();
+      const normalized = normalizeNotificationPayload(n);
+      normalized.read = false;
       setNotifications((prev) => [
-        {
-          id,
-          type: n.type || "info",
-          message: n.message,
-          createdAt,
-          actionLabel: n.actionLabel,
-          onAction: n.onAction,
-          read: false,
-        },
-        ...prev.filter((x) => x.id !== id),
+        normalized,
+        ...prev.filter((x) => x.id !== normalized.id),
       ]);
     }, []);
   const load = useCallback(async () => {
@@ -117,25 +173,11 @@ export function NotificationsProvider({
         return;
       }
       const raw = await res.json();
-      const mapped: Notification[] = (raw || []).map((r: any) => ({
-        id: String(r.id || r._id || uuid()),
-        type: (r.type as any) || "info",
-        message: r.message,
-        createdAt: r.createdAt || new Date().toISOString(),
-        actionLabel: r?.metadata?.teamId ? "View Team" : undefined,
-        onAction: r?.metadata?.teamId
-          ? () => {
-              window.location.href = `/teams/${r.metadata.teamId}`;
-            }
-          : undefined,
-        read: typeof r.read === "boolean" ? r.read : false,
-      }));
+      const mapped: Notification[] = (raw || []).map((r: any) => normalizeNotificationPayload(r));
       setNotifications((prev) => {
-        const ids = new Set(prev.map((p) => p.id));
-        const newlyAdded: Notification[] = [];
-        for (const m of mapped) {
-          if (!ids.has(m.id)) newlyAdded.push(m);
-        }
+        const prevIds = new Set(prev.map((p) => p.id));
+        const mappedIds = new Set(mapped.map((m) => m.id));
+        const newlyAdded = mapped.filter((m) => !prevIds.has(m.id));
         newlyAdded.forEach((n) => {
           try {
             toast(n.message, { description: new Date(n.createdAt).toLocaleString() });
@@ -146,7 +188,10 @@ export function NotificationsProvider({
             }
           }
         });
-        return [...newlyAdded, ...prev];
+        return [
+          ...mapped,
+          ...prev.filter((p) => !mappedIds.has(p.id)),
+        ];
       });
     } catch {
     } finally {
@@ -182,19 +227,7 @@ export function NotificationsProvider({
         const onNotification = (event: MessageEvent) => {
           try {
             const payload = JSON.parse(event.data) as any;
-            const mapped: Notification = {
-              id: String(payload.id || payload._id || uuid()),
-              type: (payload.type as any) || "info",
-              message: payload.message,
-              createdAt: payload.createdAt || new Date().toISOString(),
-              actionLabel: payload?.metadata?.teamId ? "View Team" : undefined,
-              onAction: payload?.metadata?.teamId
-                ? () => {
-                    window.location.href = `/teams/${payload.metadata.teamId}`;
-                  }
-                : undefined,
-              read: typeof payload.read === "boolean" ? payload.read : false,
-            };
+            const mapped = normalizeNotificationPayload(payload);
             setNotifications((prev) => [mapped, ...prev.filter((n) => n.id !== mapped.id)]);
           } catch (err) {
             console.error("Failed to parse notification payload", err);

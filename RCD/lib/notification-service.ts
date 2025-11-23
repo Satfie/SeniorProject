@@ -94,10 +94,7 @@ export type NotificationPayload = {
   metadata?: Record<string, unknown>
 }
 
-export function serializeNotification(doc: NotificationDoc) {
-  const baseMetadata: Record<string, unknown> | undefined = doc.metadata
-    ? { ...doc.metadata }
-    : undefined
+export function serializeNotification(doc: NotificationDoc): Notification {
   let metadata: NotificationMetadata | undefined = doc.metadata
     ? { ...doc.metadata }
     : undefined
