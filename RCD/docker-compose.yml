@@ -11,7 +11,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - DB_URI=mongodb://mongo:27017/rcd
+      - DB_URI=mongodb://rcd-mongo:27017/rcd
       - FRONTEND_ORIGIN=http://rcd-web:8080,http://localhost:8080
     restart: unless-stopped
     # Removed bind mounts for production immutability
@@ -33,7 +33,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3002
-      - MONGO_URI=mongodb://mongo:27017/rcd
+      - MONGO_URI=mongodb://rcd-mongo:27017/rcd
       - FRONTEND_ORIGIN=http://rcd-web:8080,http://localhost:8080
       - JWT_SECRET=dev_super_secret_jwt
       - USE_MEMORY_DB=false
@@ -58,9 +58,9 @@ services:
     # Remove bind mounts to ensure immutable production image.
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://auth:3002
-      - AUTH_SERVICE_URL=http://auth:3002
-      - MONGO_URI=mongodb://mongo:27017/rcd
+      - NEXT_PUBLIC_API_URL=http://rcd-auth:3002
+      - AUTH_SERVICE_URL=http://rcd-auth:3002
+      - MONGO_URI=mongodb://rcd-mongo:27017/rcd
       - NEXT_SHARP_DISABLE=true
     command: ["npm","start"]
     depends_on:

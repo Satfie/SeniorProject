@@ -73,14 +73,16 @@ export function normalizeId(value: unknown): string {
 }
 
 export function buildIdFilter(id: string): Record<string, unknown> {
-  if (looksLikeObjectId(id)) {
-    try {
-      return { _id: new ObjectId(id) }
-    } catch {
-      return { _id: id }
-    }
+  if (!looksLikeObjectId(id)) {
+    return { _id: id }
   }
-  return { _id: id }
+  try {
+    const objectId = new ObjectId(id)
+    // Match both ObjectId and string forms to handle mixed seeds/legacy data.
+    return { $or: [{ _id: objectId }, { _id: id }] }
+  } catch {
+    return { _id: id }
+  }
 }
 
 function placeholderUser(id: string): User {

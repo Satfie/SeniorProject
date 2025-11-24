@@ -73,7 +73,7 @@ async function seedIfEmpty(db: Db) {
     }
     const tournamentsSeed: any[] = [
       {
-        _id: new ObjectId().toHexString(),
+        _id: new ObjectId(),
         title: 'Valorant Clash Series',
         description: 'Single-elimination bracket for top Valorant teams.',
         date: mkDate(7),
@@ -87,7 +87,7 @@ async function seedIfEmpty(db: Db) {
         updatedAt: base.toISOString(),
       },
       {
-        _id: new ObjectId().toHexString(),
+        _id: new ObjectId(),
         title: 'Rocket League Grand Prix',
         description: 'Double-elimination LAN finals.',
         date: mkDate(14),
@@ -101,7 +101,7 @@ async function seedIfEmpty(db: Db) {
         updatedAt: base.toISOString(),
       },
       {
-        _id: new ObjectId().toHexString(),
+        _id: new ObjectId(),
         title: 'Open Ladder Finals',
         description: 'Community ladder finale with surprise drops.',
         date: mkDate(-3),
