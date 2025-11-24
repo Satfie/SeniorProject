@@ -62,6 +62,61 @@ async function seedIfEmpty(db: Db) {
     ]
     await teamsCol.insertMany(teamsSeed)
   }
+  const tournamentsCol = db.collection('tournaments')
+  const tournamentCount = await tournamentsCol.countDocuments()
+  if (tournamentCount === 0) {
+    const base = new Date()
+    const mkDate = (offsetDays: number) => {
+      const d = new Date(base)
+      d.setDate(d.getDate() + offsetDays)
+      return d.toISOString()
+    }
+    const tournamentsSeed: any[] = [
+      {
+        _id: new ObjectId().toHexString(),
+        title: 'Valorant Clash Series',
+        description: 'Single-elimination bracket for top Valorant teams.',
+        date: mkDate(7),
+        type: 'single-elimination',
+        status: 'upcoming',
+        prizePool: '$5,000',
+        maxParticipants: 16,
+        currentParticipants: 8,
+        game: 'Valorant',
+        createdAt: base.toISOString(),
+        updatedAt: base.toISOString(),
+      },
+      {
+        _id: new ObjectId().toHexString(),
+        title: 'Rocket League Grand Prix',
+        description: 'Double-elimination LAN finals.',
+        date: mkDate(14),
+        type: 'double-elimination',
+        status: 'upcoming',
+        prizePool: '$10,000',
+        maxParticipants: 12,
+        currentParticipants: 10,
+        game: 'Rocket League',
+        createdAt: base.toISOString(),
+        updatedAt: base.toISOString(),
+      },
+      {
+        _id: new ObjectId().toHexString(),
+        title: 'Open Ladder Finals',
+        description: 'Community ladder finale with surprise drops.',
+        date: mkDate(-3),
+        type: 'single-elimination',
+        status: 'completed',
+        prizePool: '$2,000',
+        maxParticipants: 8,
+        currentParticipants: 8,
+        game: 'Apex Legends',
+        createdAt: base.toISOString(),
+        updatedAt: base.toISOString(),
+      },
+    ]
+    await tournamentsCol.insertMany(tournamentsSeed)
+  }
 }
 
 export function newTeamId(): string {

@@ -9,6 +9,32 @@ import React, {
 } from "react";
 import { toast } from "sonner";
 
+const FORCE_DIRECT_API =
+  (process.env.NEXT_PUBLIC_FORCE_DIRECT_API || "")
+    .toLowerCase()
+    .trim() === "true";
+
+function resolveClientApiBase() {
+  let base = process.env.NEXT_PUBLIC_API_URL || "";
+  if (!base) return "";
+  base = base.replace(/\/$/, "");
+  if (typeof window !== "undefined") {
+    try {
+      const url = new URL(base);
+      const host = url.hostname;
+      const isLikelyDockerHost =
+        !host.includes(".") && host !== "localhost" && host !== "127.0.0.1";
+      if (isLikelyDockerHost && host !== window.location.hostname) {
+        url.hostname = window.location.hostname;
+        base = url.toString().replace(/\/$/, "");
+      }
+    } catch {
+      // Keep original base on parse failures
+    }
+  }
+  return base;
+}
+
 // Lightweight stub aligning with esports-rcd-frontend interface to satisfy imports in shared code builds.
 export type Notification = {
   id: string;
@@ -120,32 +146,38 @@ export function NotificationsProvider({
 }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
-  const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "").trim();
-  const isReal = API_BASE.length > 0;
+  const apiBase = resolveClientApiBase();
+  const useDirectBase = useMemo(
+    () => Boolean(apiBase && FORCE_DIRECT_API),
+    [apiBase]
+  );
+  const buildUrl = useCallback(
+    (path: string) => (useDirectBase ? `${apiBase}${path}` : path),
+    [apiBase, useDirectBase]
+  );
   const dismiss = useCallback((id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("rcd_token") : null;
-      if (token && isReal) {
-        fetch(`${API_BASE}/api/notifications/${encodeURIComponent(id)}`, {
+      if (token) {
+        fetch(buildUrl(`/api/notifications/${encodeURIComponent(id)}`), {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
         }).catch(() => {});
       }
     } catch {}
-  }, [API_BASE, isReal]);
+  }, [buildUrl]);
   const clearAll = useCallback(async () => {
     setNotifications([]);
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("rcd_token") : null;
       if (!token) return;
-      const url = isReal ? `${API_BASE}/api/notifications` : `/api/notifications`;
-      await fetch(url, {
+      await fetch(buildUrl(`/api/notifications`), {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch {}
-  }, [API_BASE, isReal]);
+  }, [buildUrl]);
   const addNotification: NotificationsContextValue["addNotification"] =
     useCallback((n) => {
       const normalized = normalizeNotificationPayload(n);
@@ -160,8 +192,7 @@ export function NotificationsProvider({
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("rcd_token") : null;
       if (!token) return;
-      const url = isReal ? `${API_BASE}/api/notifications` : `/api/notifications`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(buildUrl(`/api/notifications`), { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) {
         if (res.status >= 500) {
           const err = await res.json().catch(() => ({}));
@@ -197,7 +228,7 @@ export function NotificationsProvider({
     } finally {
       setLoading(false);
     }
-  }, [API_BASE, isReal]);
+  }, [buildUrl]);
   const refresh = useCallback(() => {
     return load();
   }, [load]);
@@ -206,11 +237,10 @@ export function NotificationsProvider({
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("rcd_token") : null;
       if (!token) return;
-      const url = isReal ? `${API_BASE}/api/notifications/read` : `/api/notifications/read`;
-      await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      await fetch(buildUrl(`/api/notifications/read`), { method: "POST", headers: { Authorization: `Bearer ${token}` } });
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     } catch {}
-  }, [API_BASE, isReal]);
+  }, [buildUrl]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -218,13 +248,14 @@ export function NotificationsProvider({
     if (!token) return; // defer until token exists
     void load();
     let cleanup: (() => void) | undefined;
-    if (isReal && token && typeof EventSource !== "undefined") {
+    if (token && typeof EventSource !== "undefined") {
       let stopped = false;
       let source: EventSource | null = null;
       let retryMs = 2000;
       const connect = () => {
         if (stopped) return;
-        source = new EventSource(`${API_BASE}/api/notifications/stream?token=${encodeURIComponent(token)}`);
+        const streamUrl = buildUrl(`/api/notifications/stream?token=${encodeURIComponent(token)}`);
+        source = new EventSource(streamUrl);
         const onNotification = (event: MessageEvent) => {
           try {
             const payload = JSON.parse(event.data) as any;
@@ -270,7 +301,7 @@ export function NotificationsProvider({
       cleanup = () => clearInterval(interval);
       return cleanup;
     }
-  }, [API_BASE, isReal, load]);
+  }, [buildUrl, load]);
 
   // Secondary effect: when token appears after login, trigger initial load
   useEffect(() => {

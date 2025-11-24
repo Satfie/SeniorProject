@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+// Set strictQuery explicitly to avoid Mongoose deprecation warnings in production
+mongoose.set('strictQuery', true);
 
 const dbURI = process.env.DB_URI || 'mongodb://localhost:27017/sportsdb';
 

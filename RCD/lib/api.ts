@@ -1,8 +1,40 @@
 // API client for RCD backend
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || ""
+const FORCE_DIRECT_API =
+  (process.env.NEXT_PUBLIC_FORCE_DIRECT_API || "")
+    .toLowerCase()
+    .trim() === "true";
+
+const API_BASE = resolveApiBase();
 const DATA_MODE = (
   process.env.NEXT_PUBLIC_DATA_MODE || (API_BASE ? "real" : "mock")
 ).toLowerCase() as "mock" | "real";
+
+function resolveApiBase() {
+  let base = process.env.NEXT_PUBLIC_API_URL || "";
+  if (!base) return "";
+  if (base.endsWith("/")) base = base.slice(0, -1);
+  if (typeof window !== "undefined") {
+    try {
+      const url = new URL(base);
+      const host = url.hostname;
+      const isLikelyDockerHost =
+        !host.includes(".") && host !== "localhost" && host !== "127.0.0.1";
+      if (isLikelyDockerHost && host !== window.location.hostname) {
+        url.hostname = window.location.hostname;
+        base = url.toString().replace(/\/$/, "");
+      }
+    } catch {
+      // Keep original base on parse failure
+    }
+  }
+  return base;
+}
+
+function shouldUseDirectApi() {
+  if (!API_BASE) return false;
+  if (typeof window === "undefined") return true;
+  return FORCE_DIRECT_API;
+}
 
 export interface User {
   id: string;
@@ -144,18 +176,45 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const base = DATA_MODE === "real" ? API_BASE : "";
-    const url = `${base}${endpoint}`;
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...this.getHeaders(),
-        ...options.headers,
-      },
-    });
+    const { url, usingDirectBase } = this.buildRequestUrl(endpoint);
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...options,
+        headers: {
+          ...this.getHeaders(),
+          ...options.headers,
+        },
+      });
+    } catch (e: any) {
+      if (usingDirectBase && typeof window !== "undefined") {
+        try {
+          const original = new URL(url);
+          const host = original.hostname;
+          const isLikelyDockerHost =
+            !host.includes(".") && host !== "localhost" && host !== "127.0.0.1";
+          if (isLikelyDockerHost) {
+            original.hostname = window.location.hostname;
+            const retryUrl = original.toString();
+            response = await fetch(retryUrl, {
+              ...options,
+              headers: {
+                ...this.getHeaders(),
+                ...options.headers,
+              },
+            });
+          } else {
+            throw e;
+          }
+        } catch {
+          throw e;
+        }
+      } else {
+        throw e;
+      }
+    }
 
     if (!response.ok) {
-      // Try JSON; if fails, capture raw text for diagnostics
       let error: any;
       try {
         error = await response.json();
@@ -165,7 +224,7 @@ class ApiClient {
       }
       throw new Error(error.message || `HTTP ${response.status}`);
     }
-    // Successful path – attempt JSON parse with diagnostics fallback
+
     try {
       return await response.json();
     } catch (e: any) {
@@ -368,7 +427,7 @@ class ApiClient {
     onUpdate: (bracket: Bracket) => void
   ): EventSource {
     const es = new EventSource(
-      `${DATA_MODE === "real" ? API_BASE : ""}/api/tournaments/${tournamentId}/bracket/stream`
+      `${this.getStreamBase()}/api/tournaments/${tournamentId}/bracket/stream`
     );
     const handler = (ev: MessageEvent) => {
       try {
@@ -378,6 +437,17 @@ class ApiClient {
     };
     es.addEventListener("bracket", handler);
     return es;
+  }
+
+  private buildRequestUrl(endpoint: string) {
+    const usingDirectBase = DATA_MODE === "real" && shouldUseDirectApi();
+    const base = usingDirectBase ? API_BASE : "";
+    return { url: `${base}${endpoint}`, usingDirectBase };
+  }
+
+  private getStreamBase() {
+    const usingDirectBase = DATA_MODE === "real" && shouldUseDirectApi();
+    return usingDirectBase ? API_BASE : "";
   }
 
   async deleteTournament(id: string) {

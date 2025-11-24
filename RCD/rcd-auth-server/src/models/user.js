@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // Hash password before saving
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 userSchema.pre('save', async function(next) {

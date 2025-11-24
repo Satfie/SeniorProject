@@ -9,12 +9,12 @@ services:
     depends_on:
       - mongo
     environment:
-      - MONGO_URI=mongodb://mongo:27017/rcd
-      - AUTH_SERVICE_URL=http://auth:3002
+      - NODE_ENV=production
+      - PORT=3001
+      - DB_URI=mongodb://mongo:27017/rcd
+      - FRONTEND_ORIGIN=http://rcd-web:8080,http://localhost:8080
     restart: unless-stopped
-    volumes:
-      - ./rcd-app:/usr/src/app
-      - /usr/src/app/node_modules
+    # Removed bind mounts for production immutability
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
@@ -31,11 +31,13 @@ services:
     depends_on:
       - mongo
     environment:
-      - MONGO_URI=mongodb://mongo:27017/rcd
+      - NODE_ENV=production
       - PORT=3002
-      - FRONTEND_ORIGIN=http://localhost:8080,http://localhost:3000
+      - MONGO_URI=mongodb://mongo:27017/rcd
+      - FRONTEND_ORIGIN=http://rcd-web:8080,http://localhost:8080
       - JWT_SECRET=dev_super_secret_jwt
       - USE_MEMORY_DB=false
+      - AUTO_CREATE_ADMIN=false
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
@@ -52,13 +54,15 @@ services:
       dockerfile: Dockerfile.web
     ports:
       - "8080:3000"
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
-      - /usr/src/app/.next
+    # In production we rely on the built image (Dockerfile.web already runs build).
+    # Remove bind mounts to ensure immutable production image.
     environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://auth:3002
+      - AUTH_SERVICE_URL=http://auth:3002
       - MONGO_URI=mongodb://mongo:27017/rcd
-    command: npm run dev
+      - NEXT_SHARP_DISABLE=true
+    command: ["npm","start"]
     depends_on:
       - app
       - auth

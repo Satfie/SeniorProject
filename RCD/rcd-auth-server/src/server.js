@@ -1,5 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
+// Silence strictQuery deprecation warning by explicitly setting desired behavior
+mongoose.set('strictQuery', true);
 const dotenv = require('dotenv');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
