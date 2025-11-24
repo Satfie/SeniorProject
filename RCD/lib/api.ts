@@ -358,6 +358,12 @@ class ApiClient {
     );
   }
 
+  async listTournamentParticipants(tournamentId: string) {
+    return this.request<Array<{ teamId: string; name: string }>>(
+      `/api/tournaments/${tournamentId}/participants`
+    );
+  }
+
   async startTournament(tournamentId: string, format?: BracketKind) {
     return this.request<Bracket>(`/api/tournaments/${tournamentId}/start`, {
       method: "POST",

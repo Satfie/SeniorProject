@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { api, type Tournament, type Bracket } from "@/lib/api";
 import { BracketViewer } from "@/components/bracket-viewer";
 import { useAuth } from "@/lib/auth-context"
@@ -41,6 +42,8 @@ export default function TournamentDetailPage() {
   const [ending, setEnding] = useState(false);
   const [teamNames, setTeamNames] = useState<Record<string, string>>({});
   const [isCaptain, setIsCaptain] = useState(false);
+  const [participants, setParticipants] = useState<Array<{ teamId: string; name: string }>>([]);
+  const [participantsLoading, setParticipantsLoading] = useState(false);
 
   // Load teams for team manager picker
   useEffect(() => {
@@ -92,6 +95,23 @@ export default function TournamentDetailPage() {
 
     fetchTournament();
   }, [id, router]);
+
+  // Load participants list (public endpoint)
+  useEffect(() => {
+    const loadParticipants = async () => {
+      if (!id) return;
+      setParticipantsLoading(true);
+      try {
+        const list = await api.listTournamentParticipants(id);
+        setParticipants(list);
+      } catch {
+        setParticipants([]);
+      } finally {
+        setParticipantsLoading(false);
+      }
+    };
+    loadParticipants();
+  }, [id]);
 
   const handleRegister = async () => {
     if (!user) {
@@ -401,16 +421,37 @@ export default function TournamentDetailPage() {
                     <CardHeader>
                       <CardTitle>Participating Teams</CardTitle>
                       <CardDescription>
-                        {tournament.currentParticipants || 0} teams registered
+                        {participantsLoading ? "Loading teams..." : `${participants.length} teams registered`}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="grid sm:grid-cols-2 gap-4">
-                        {/* Placeholder for teams list - API doesn't provide list of teams directly in tournament object yet */}
-                        <div className="col-span-full text-center py-12 text-muted-foreground">
-                          <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                          <p>Team list visualization coming soon.</p>
-                        </div>
+                        {participantsLoading && (
+                          <div className="col-span-full text-center py-12 text-muted-foreground">
+                            <div className="w-12 h-12 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto mb-4" />
+                            <p>Loading participants...</p>
+                          </div>
+                        )}
+                        {!participantsLoading && participants.length === 0 && (
+                          <div className="col-span-full text-center py-12 text-muted-foreground">
+                            <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                            <p>No teams registered yet.</p>
+                          </div>
+                        )}
+                        {!participantsLoading && participants.map(p => (
+                          <div key={p.teamId} className="p-4 rounded-xl bg-background/50 border border-white/5 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-primary-foreground font-bold">
+                                {p.name.slice(0,2).toUpperCase()}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{p.name}</span>
+                                <span className="text-xs text-muted-foreground">{p.teamId}</span>
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="text-xs">Registered</Badge>
+                          </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
