@@ -213,9 +213,10 @@ export function NotificationsProvider({
   }, [API_BASE, isReal]);
 
   useEffect(() => {
-    void load();
     if (typeof window === "undefined") return;
     const token = localStorage.getItem("rcd_token");
+    if (!token) return; // defer until token exists
+    void load();
     let cleanup: (() => void) | undefined;
     if (isReal && token && typeof EventSource !== "undefined") {
       let stopped = false;
@@ -262,12 +263,23 @@ export function NotificationsProvider({
       return cleanup;
     } else {
       const interval = setInterval(() => {
+        const currentToken = localStorage.getItem("rcd_token");
+        if (!currentToken) return; // skip while logged out
         void load();
       }, 15000);
       cleanup = () => clearInterval(interval);
       return cleanup;
     }
   }, [API_BASE, isReal, load]);
+
+  // Secondary effect: when token appears after login, trigger initial load
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const token = localStorage.getItem("rcd_token");
+    if (token && notifications.length === 0 && !loading) {
+      void load();
+    }
+  }, [notifications.length, loading, load]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const value = useMemo(

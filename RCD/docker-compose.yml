@@ -35,6 +35,7 @@ services:
       - PORT=3002
       - FRONTEND_ORIGIN=http://localhost:8080,http://localhost:3000
       - JWT_SECRET=dev_super_secret_jwt
+      - USE_MEMORY_DB=false
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
@@ -73,6 +74,8 @@ services:
   mongo:
     container_name: rcd-mongo
     image: mongo:6
+    ports:
+      - "27017:27017"
     volumes:
       - mongodb_data:/data/db
     restart: unless-stopped

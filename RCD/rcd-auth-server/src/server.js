@@ -127,10 +127,25 @@ async function start() {
     res.json({ id: user._id, email: user.email, username: user.username || undefined, role: user.role || 'player' });
   });
 
+  // Debug endpoint to verify JWT secret and token decode behavior without requiring auth
+  app.get('/api/auth/debug', (req, res) => {
+    const providedSecret = process.env.JWT_SECRET || null;
+    const fallbackUsed = !process.env.JWT_SECRET;
+    res.json({
+      jwtSecretConfigured: !!providedSecret,
+      fallbackUsed,
+      useMemoryDb: process.env.USE_MEMORY_DB === 'true',
+      dbConnected: mongoose.connection.readyState === 1,
+    });
+  });
+
   // Start server
   const PORT = process.env.PORT || 3002;
   app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT} (memoryDB=${process.env.USE_MEMORY_DB === 'true'})`);
+    if (!process.env.JWT_SECRET) {
+      console.warn('[auth] Warning: JWT_SECRET not set, using fallback insecure secret.');
+    }
   });
 }
 

@@ -70,6 +70,10 @@ export default function TeamDetailPage() {
   useEffect(() => {
     const loadRequests = async () => {
       if (!id || !user) return;
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('rcd_token');
+        if (!token) return; // wait for token
+      }
       setLoadingRequests(true);
       try {
         const list = await api.getTeamJoinRequests(id);
