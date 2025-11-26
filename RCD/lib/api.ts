@@ -6,7 +6,7 @@ const FORCE_DIRECT_API =
 
 const API_BASE = resolveApiBase();
 const DATA_MODE = (
-  process.env.NEXT_PUBLIC_DATA_MODE || (API_BASE ? "real" : "mock")
+  process.env.NEXT_PUBLIC_DATA_MODE || "real"
 ).toLowerCase() as "mock" | "real";
 
 function resolveApiBase() {

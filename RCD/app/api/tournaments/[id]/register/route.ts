@@ -43,24 +43,40 @@ export async function POST(
     if (!isAuthorized) {
       return NextResponse.json({ message: "forbidden" }, { status: 403 });
     }
-    const eligibleIds: string[] = [];
-    const seen = new Set<string>();
-    const addEligible = (value: unknown) => {
+    const eligibleSet = new Set<string>();
+    const pushEligible = (value: unknown) => {
       if (!value) return;
-      const str = String(value);
-      if (!str) return;
-      if (seen.has(str)) return;
-      seen.add(str);
-      eligibleIds.push(str);
+      let raw: string | undefined
+      if (typeof value === "string") {
+        raw = value
+      } else if (
+        typeof value === "object" &&
+        value !== null &&
+        typeof (value as any).id === "string"
+      ) {
+        raw = (value as any).id
+      } else if (
+        typeof value === "object" &&
+        value !== null &&
+        typeof (value as any).toHexString === "function"
+      ) {
+        raw = (value as any).toHexString()
+      } else {
+        raw = String(value)
+      }
+      if (!raw) return;
+      const trimmed = raw.trim();
+      if (!trimmed) return;
+      eligibleSet.add(trimmed);
     };
     if (Array.isArray(team.members)) {
-      team.members.forEach((member) => addEligible(member));
+      team.members.forEach((member) => pushEligible(member));
     }
-    addEligible(team.managerId);
+    pushEligible(team.managerId);
     if (Array.isArray(team.captainIds)) {
-      team.captainIds.forEach((cid) => addEligible(cid));
+      team.captainIds.forEach((cid) => pushEligible(cid));
     }
-
+    const eligibleIds = Array.from(eligibleSet);
     if (!eligibleIds.length) {
       return NextResponse.json(
         { message: "Team has no eligible members" },
@@ -82,12 +98,18 @@ export async function POST(
       );
     }
 
-    let selectedIds: string[] | undefined = Array.isArray(body.playerIds)
-      ? Array.from(new Set(body.playerIds.map((pid) => String(pid).trim()).filter(Boolean)))
+    let selectedIds = Array.isArray(body.playerIds)
+      ? Array.from(
+          new Set(
+            body.playerIds
+              .map((pid) => (typeof pid === "string" ? pid.trim() : String(pid || "").trim()))
+              .filter(Boolean)
+          )
+        )
       : undefined;
 
     if (selectedIds?.length) {
-      const invalid = selectedIds.find((pid) => !seen.has(pid));
+      const invalid = selectedIds.find((pid) => !eligibleSet.has(pid));
       if (invalid) {
         return NextResponse.json(
           { message: "One or more selected players are not on this team" },
@@ -96,20 +118,18 @@ export async function POST(
       }
     }
 
-    if (targetRosterSize && eligibleIds.length > targetRosterSize) {
-      if (!selectedIds || selectedIds.length !== targetRosterSize) {
+    if (targetRosterSize) {
+      if (!selectedIds || !selectedIds.length) {
+        selectedIds = eligibleIds.slice(0, targetRosterSize);
+      }
+      if (selectedIds.length !== targetRosterSize) {
         return NextResponse.json(
-          {
-            message: `Select exactly ${targetRosterSize} players for this tournament`,
-          },
+          { message: `Select exactly ${targetRosterSize} players for this tournament` },
           { status: 400 }
         );
       }
     } else if (!selectedIds || !selectedIds.length) {
-      selectedIds = eligibleIds.slice(
-        0,
-        targetRosterSize ? Math.min(targetRosterSize, eligibleIds.length) : eligibleIds.length
-      );
+      selectedIds = eligibleIds;
     }
 
     const registration = await createTournamentRegistration(

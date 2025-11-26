@@ -56,6 +56,7 @@ function AdminContent() {
     maxParticipants: "",
     prizePool: "",
     game: "",
+    rosterSize: "5",
   });
 
   useEffect(() => {
@@ -137,6 +138,9 @@ function AdminContent() {
         maxParticipants: tournamentForm.maxParticipants
           ? Number.parseInt(tournamentForm.maxParticipants)
           : undefined,
+        rosterSize: tournamentForm.rosterSize
+          ? Number.parseInt(tournamentForm.rosterSize)
+          : undefined,
       };
 
       if (editingTournament) {
@@ -158,6 +162,7 @@ function AdminContent() {
         maxParticipants: "",
         prizePool: "",
         game: "",
+        rosterSize: "5",
       });
       fetchData();
     } catch (error: any) {
@@ -188,6 +193,7 @@ function AdminContent() {
       maxParticipants: tournament.maxParticipants?.toString() || "",
       prizePool: tournament.prizePool || "",
       game: tournament.game || "",
+      rosterSize: tournament.rosterSize?.toString() || "",
     });
     setShowTournamentDialog(true);
   };
@@ -852,6 +858,27 @@ function AdminContent() {
                     placeholder="e.g., 32"
                     className="bg-background/50"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rosterSize">Team Size (players)</Label>
+                  <Input
+                    id="rosterSize"
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={tournamentForm.rosterSize}
+                    onChange={(e) =>
+                      setTournamentForm({
+                        ...tournamentForm,
+                        rosterSize: e.target.value,
+                      })
+                    }
+                    placeholder="e.g., 5 for 5v5"
+                    className="bg-background/50"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Choose how many players each team fields (use 1 for 1v1, 2 for 2v2, etc.). Leave blank for flexible teams.
+                  </p>
                 </div>
               </div>
               <div className="space-y-2">
