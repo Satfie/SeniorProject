@@ -58,7 +58,6 @@ services:
     # Remove bind mounts to ensure immutable production image.
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://rcd-auth:3002
       - AUTH_SERVICE_URL=http://rcd-auth:3002
       - MONGO_URI=mongodb://rcd-mongo:27017/rcd
       - NEXT_SHARP_DISABLE=true
