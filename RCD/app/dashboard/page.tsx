@@ -36,7 +36,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useNotifications } from "@/lib/notifications-context"
 
 function DashboardContent() {
-  const { user, isTeamManager, isAdmin, refreshUser } = useAuth()
+  const { user, isAdmin, refreshUser } = useAuth()
   const { notifications } = useNotifications()
   const [tournaments, setTournaments] = useState<Tournament[]>([])
   const [team, setTeam] = useState<Team | null>(null)
@@ -64,32 +64,59 @@ function DashboardContent() {
         const tournamentsData = await api.getTournaments()
         setTournaments(tournamentsData.filter((t) => t.status === "upcoming").slice(0, 5))
 
-        if (user?.teamId) {
+        let allTeams: Team[] = []
+        if (user) {
           try {
-            const teamData = await api.getTeam(user.teamId);
-            setTeam(teamData);
-          } catch {}
-        } else {
-          setTeam(null)
+            allTeams = await api.getTeams()
+          } catch {
+            allTeams = []
+          }
         }
 
-        if (user && (isTeamManager || isAdmin)) {
-          try {
-            const all = await api.getTeams();
-            setManagedTeams(all.filter(t => t.managerId === user.id));
-            const reqs = await api.getManagerJoinRequests();
-            setManagerRequests(reqs);
-          } catch {
-            setManagedTeams([]);
-            setManagerRequests([]);
+        let resolvedTeam: Team | null = null
+        if (user) {
+          if (user.teamId) {
+            resolvedTeam = allTeams.find((t) => t.id === user.teamId) || null
+            if (!resolvedTeam) {
+              try {
+                resolvedTeam = await api.getTeam(user.teamId)
+              } catch {
+                resolvedTeam = null
+              }
+            }
           }
+          if (!resolvedTeam) {
+            resolvedTeam =
+              allTeams.find((team) =>
+                (team.members || []).some((member) => member.id === user.id)
+              ) || null
+          }
+        }
+        setTeam(resolvedTeam)
+
+        if (user) {
+          const managed = allTeams.filter((team) => team.managerId === user.id)
+          setManagedTeams(managed)
+          if (managed.length > 0 || isAdmin) {
+            try {
+              const reqs = await api.getManagerJoinRequests()
+              setManagerRequests(reqs)
+            } catch {
+              setManagerRequests([])
+            }
+          } else {
+            setManagerRequests([])
+          }
+        } else {
+          setManagedTeams([])
+          setManagerRequests([])
         }
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error)
       }
     }
     fetchData()
-  }, [user, isTeamManager, isAdmin])
+  }, [user, isAdmin])
 
   // Handlers
   const handleCreateTeam = async () => {
@@ -272,7 +299,7 @@ function DashboardContent() {
             <TabsTrigger value="overview" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Overview</TabsTrigger>
             <TabsTrigger value="tournaments" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">My Tournaments</TabsTrigger>
             <TabsTrigger value="team" className="px-6 py-2.5 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              {isTeamManager ? "Team Management" : "My Team"}
+              {managedTeams.length > 0 || isAdmin ? "Team Management" : "My Team"}
               {managerRequests.length > 0 && (
                 <Badge variant="secondary" className="ml-2 bg-red-500 text-white hover:bg-red-600 h-5 px-1.5">{managerRequests.length}</Badge>
               )}
@@ -420,7 +447,7 @@ function DashboardContent() {
               {/* Left Col: Team List / Creation */}
               <div className="space-y-6">
                 {/* Only show Managed Teams if user is a manager */}
-                {(isTeamManager || managedTeams.length > 0) && (
+                {(managedTeams.length > 0 || isAdmin) && (
                   <Card className="bg-card/40 backdrop-blur border-white/5">
                     <CardHeader>
                       <CardTitle>Managed Teams</CardTitle>

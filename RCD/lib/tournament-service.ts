@@ -6,6 +6,22 @@ import { buildIdFilter, looksLikeObjectId, normalizeId, type TeamDoc } from "@/l
 const TOURNAMENTS_COLLECTION = "tournaments"
 const REGISTRATIONS_COLLECTION = "tournamentRegistrations"
 const BRACKETS_COLLECTION = "tournamentBrackets"
+const DEFAULT_ROSTER_SIZE = Number(process.env.TOURNAMENT_DEFAULT_ROSTER_SIZE || 5)
+
+function sanitizeRosterSize(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const whole = Math.floor(value)
+    if (whole > 0) return Math.min(whole, 10)
+    return undefined
+  }
+  if (typeof value === "string" && value.trim().length) {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed)) {
+      return sanitizeRosterSize(parsed)
+    }
+  }
+  return undefined
+}
 
 type TournamentStatus = Tournament["status"]
 
@@ -20,6 +36,7 @@ export type TournamentDoc = {
   maxParticipants?: number
   currentParticipants?: number
   game?: string
+  rosterSize?: number
   payout?: {
     total: number
     awards: Array<{ place: number; teamId: string; amount: number }>
@@ -35,6 +52,7 @@ export type RegistrationDoc = {
   teamId: string
   status: "pending" | "approved" | "rejected"
   createdAt: string
+  playerIds?: string[]
 }
 
 export type BracketDoc = Bracket & {
@@ -110,6 +128,7 @@ export function serializeTournament(doc: TournamentDoc): Tournament {
     maxParticipants: typeof doc.maxParticipants === "number" ? doc.maxParticipants : undefined,
     currentParticipants: typeof doc.currentParticipants === "number" ? doc.currentParticipants : 0,
     game: doc.game,
+    rosterSize: typeof doc.rosterSize === "number" ? doc.rosterSize : undefined,
     payout: doc.payout,
   }
 }
@@ -121,6 +140,7 @@ export function serializeRegistration(doc: RegistrationDoc): Registration {
     teamId: doc.teamId,
     status: doc.status,
     createdAt: doc.createdAt,
+    playerIds: Array.isArray(doc.playerIds) ? doc.playerIds.map(String) : undefined,
   }
 }
 
@@ -150,6 +170,7 @@ export async function createTournament(
   data: Partial<TournamentDoc>
 ): Promise<Tournament> {
   const now = nowIso()
+  const rosterSize = sanitizeRosterSize(data.rosterSize) ?? DEFAULT_ROSTER_SIZE
   const doc: TournamentDoc = {
     _id: new ObjectId(),
     title: data.title?.trim() || "Untitled Tournament",
@@ -163,6 +184,7 @@ export async function createTournament(
     currentParticipants:
       typeof data.currentParticipants === "number" ? data.currentParticipants : 0,
     game: data.game,
+    rosterSize,
     payout: data.payout,
     createdAt: now,
     updatedAt: now,
@@ -190,6 +212,10 @@ export async function updateTournament(
   if (typeof updates.currentParticipants === "number")
     allowed.currentParticipants = updates.currentParticipants
   if (typeof updates.game === "string" || updates.game === null) allowed.game = updates.game || undefined
+  if (Object.prototype.hasOwnProperty.call(updates, "rosterSize")) {
+    const next = sanitizeRosterSize((updates as any).rosterSize)
+    allowed.rosterSize = next
+  }
   if (updates.payout) allowed.payout = updates.payout
   if (!Object.keys(allowed).length) {
     const existing = await getTournamentById(db, id)
@@ -220,7 +246,8 @@ export async function listTournamentRegistrations(db: Db, tournamentId: string) 
 export async function createTournamentRegistration(
   db: Db,
   tournamentId: string,
-  teamId: string
+  teamId: string,
+  options?: { playerIds?: string[] }
 ): Promise<Registration> {
   const tournament = await getTournamentById(db, tournamentId)
   if (!tournament) {
@@ -243,12 +270,17 @@ export async function createTournamentRegistration(
   if (existing) {
     throw new Error("Team already registered")
   }
+  const normalizedPlayerIds = Array.isArray(options?.playerIds)
+    ? Array.from(new Set(options.playerIds.map((id) => String(id).trim()).filter(Boolean)))
+    : undefined
+
   const doc: RegistrationDoc = {
     _id: new ObjectId(),
     tournamentId,
     teamId,
     status: "approved",
     createdAt: nowIso(),
+    playerIds: normalizedPlayerIds && normalizedPlayerIds.length ? normalizedPlayerIds : undefined,
   }
   await db.collection<RegistrationDoc>(REGISTRATIONS_COLLECTION).insertOne(doc as any)
   await db

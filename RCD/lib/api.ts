@@ -82,6 +82,7 @@ export interface Tournament {
   currentParticipants?: number
   prizePool?: string
   game?: string
+  rosterSize?: number
   payout?: {
     total: number
     awards: Array<{ place: number; teamId: string; amount: number }>
@@ -120,6 +121,13 @@ export interface Registration {
   teamId: string;
   status: "pending" | "approved" | "rejected";
   createdAt: string;
+  playerIds?: string[];
+}
+
+export interface TournamentParticipant {
+  teamId: string;
+  name: string;
+  players?: Array<Pick<User, "id" | "username" | "email" | "avatarUrl">>;
 }
 
 export interface Team {
@@ -265,6 +273,12 @@ class ApiClient {
       currentParticipants: typeof current === "number" ? current : undefined,
       prizePool: raw.prizePool || raw.prize_pool || undefined,
       game: raw.game || undefined,
+      rosterSize:
+        typeof raw.rosterSize === "number"
+          ? raw.rosterSize
+          : typeof raw.roster_size === "number"
+          ? raw.roster_size
+          : undefined,
       // Pass through payout if present
       ...(raw.payout
         ? {
@@ -328,10 +342,20 @@ class ApiClient {
     return this.normalizeTournament(t);
   }
 
-  async registerForTournament(id: string, teamId?: string) {
+  async registerForTournament(
+    id: string,
+    data?: { teamId?: string; playerIds?: string[] }
+  ) {
+    const payload: Record<string, any> = {};
+    if (typeof data?.teamId === "string" && data.teamId.trim().length) {
+      payload.teamId = data.teamId;
+    }
+    if (Array.isArray(data?.playerIds)) {
+      payload.playerIds = data.playerIds;
+    }
     return this.request(`/api/tournaments/${id}/register`, {
       method: "POST",
-      body: JSON.stringify(teamId ? { teamId } : {}),
+      body: JSON.stringify(payload),
     });
   }
 
@@ -359,7 +383,7 @@ class ApiClient {
   }
 
   async listTournamentParticipants(tournamentId: string) {
-    return this.request<Array<{ teamId: string; name: string }>>(
+    return this.request<TournamentParticipant[]>(
       `/api/tournaments/${tournamentId}/participants`
     );
   }

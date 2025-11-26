@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { api, type Tournament, type Bracket } from "@/lib/api";
+import { api, type Tournament, type Bracket, type Team, type TournamentParticipant } from "@/lib/api";
 import { BracketViewer } from "@/components/bracket-viewer";
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
@@ -24,12 +24,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 
 export default function TournamentDetailPage() {
   const rawParams = useParams();
   const id = (rawParams as any)?.id as string | undefined;
   const router = useRouter()
-  const { user, isTeamManager, isPlayer } = useAuth()
+  const { user } = useAuth()
   const [tournament, setTournament] = useState<Tournament | null>(null)
   const [loading, setLoading] = useState(true)
   const [registering, setRegistering] = useState(false)
@@ -38,39 +39,92 @@ export default function TournamentDetailPage() {
   const [bracket, setBracket] = useState<Bracket | null>(null);
   const [starting, setStarting] = useState(false);
   const [format, setFormat] = useState<"single" | "double">("single");
-  const [managerTeams, setManagerTeams] = useState<Array<{id:string; name:string}>>([]);
+  const [allTeams, setAllTeams] = useState<Team[]>([]);
+  const [ownedTeams, setOwnedTeams] = useState<Team[]>([]);
+  const [membershipTeam, setMembershipTeam] = useState<Team | null>(null);
   const [ending, setEnding] = useState(false);
   const [teamNames, setTeamNames] = useState<Record<string, string>>({});
   const [isCaptain, setIsCaptain] = useState(false);
-  const [participants, setParticipants] = useState<Array<{ teamId: string; name: string }>>([]);
+  const [participants, setParticipants] = useState<TournamentParticipant[]>([]);
   const [participantsLoading, setParticipantsLoading] = useState(false);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
 
-  // Load teams for team manager picker
-  useEffect(() => {
-    if (user && isTeamManager) {
-      api.getTeams().then(all => {
-        const owned = all.filter(t => t.managerId === user.id).map(t => ({ id: t.id, name: t.name }));
-        setManagerTeams(owned);
-      }).catch(() => {});
+  const selectedTeam: Team | null = useMemo(() => {
+    if (ownedTeams.length && selectedTeamId) {
+      return ownedTeams.find((team) => team.id === selectedTeamId) || null;
     }
-  }, [user, isTeamManager]);
+    return membershipTeam || null;
+  }, [ownedTeams, membershipTeam, selectedTeamId]);
 
-  // Load all teams for mapping payout summary
+  // Load all teams for mapping/pickers
   useEffect(() => {
-    api.getTeams().then(all => {
-      const map: Record<string,string> = {};
-      all.forEach(t => { map[t.id] = t.name; });
-      setTeamNames(map);
-    }).catch(() => {});
+    api.getTeams()
+      .then((teams) => setAllTeams(teams))
+      .catch(() => setAllTeams([]));
   }, []);
+
+  useEffect(() => {
+    const map: Record<string, string> = {};
+    allTeams.forEach((team) => {
+      map[team.id] = team.name;
+    });
+    setTeamNames(map);
+  }, [allTeams]);
+
+  useEffect(() => {
+    if (!user) {
+      setOwnedTeams([]);
+      setMembershipTeam(null);
+      return;
+    }
+    const owned = allTeams.filter((team) => team.managerId === user.id);
+    setOwnedTeams(owned);
+    const member =
+      allTeams.find((team) =>
+        (team.members || []).some((member) => member.id === user.id)
+      ) || null;
+    setMembershipTeam(member || null);
+  }, [allTeams, user]);
 
   // Determine if current user is a captain of their team
   useEffect(() => {
-    if (!user?.teamId) { setIsCaptain(false); return; }
-    api.getTeam(user.teamId).then(t => {
-      setIsCaptain(!!(t.captainIds && user && t.captainIds.includes(user.id)));
-    }).catch(() => setIsCaptain(false));
-  }, [user]);
+    if (!user || !membershipTeam) {
+      setIsCaptain(false);
+      return;
+    }
+    setIsCaptain(!!membershipTeam.captainIds?.includes(user.id));
+  }, [membershipTeam, user]);
+
+  useEffect(() => {
+    if (!ownedTeams.length) {
+      setSelectedTeamId("");
+      return;
+    }
+    if (!selectedTeamId || !ownedTeams.some((team) => team.id === selectedTeamId)) {
+      setSelectedTeamId(ownedTeams[0].id);
+    }
+  }, [ownedTeams, selectedTeamId]);
+
+  useEffect(() => {
+    if (!selectedTeam) {
+      setSelectedPlayerIds([]);
+      return;
+    }
+    const rosterSize = tournament?.rosterSize;
+    const members = (selectedTeam.members || [])
+      .map((member) => member.id)
+      .filter((id): id is string => Boolean(id));
+    const unique = Array.from(new Set(members));
+    if (rosterSize && unique.length > rosterSize) {
+      setSelectedPlayerIds((prev) => {
+        const preserved = prev.filter((id) => unique.includes(id)).slice(0, rosterSize);
+        if (preserved.length === rosterSize) return preserved;
+        return unique.slice(0, rosterSize);
+      });
+    } else {
+      setSelectedPlayerIds(unique);
+    }
+  }, [selectedTeam, tournament?.rosterSize]);
 
   useEffect(() => {
     const fetchTournament = async () => {
@@ -113,24 +167,52 @@ export default function TournamentDetailPage() {
     loadParticipants();
   }, [id]);
 
+  const canRegisterTeam = useMemo(() => {
+    if (!user) return false;
+    if (ownedTeams.length > 0) return true;
+    if (!membershipTeam) return false;
+    return (
+      membershipTeam.managerId === user.id ||
+      !!membershipTeam.captainIds?.includes(user.id) ||
+      user.role === "admin"
+    );
+  }, [membershipTeam, ownedTeams, user]);
+
+  const rosterLimit = tournament?.rosterSize;
+  const requiresRosterSelection = Boolean(
+    rosterLimit &&
+    selectedTeam &&
+    (selectedTeam.members?.length || 0) > rosterLimit
+  );
+  const rosterSelectionValid = !requiresRosterSelection || selectedPlayerIds.length === rosterLimit;
+
   const handleRegister = async () => {
     if (!user) {
       router.push("/login")
       return
     }
 
-    if (isTeamManager && !selectedTeamId) {
-      toast.error("Please select a team")
+    if (!selectedTeam) {
+      toast.error("Select a team to register")
+      return
+    }
+
+    if (requiresRosterSelection && !rosterSelectionValid) {
+      toast.error(`Select exactly ${rosterLimit} players for this tournament`)
       return
     }
 
     setRegistering(true)
     try {
-  if (!id) return;
-  await api.registerForTournament(
-    id,
-    isTeamManager ? selectedTeamId : (isCaptain && user.teamId ? user.teamId : undefined)
-  );
+      if (!id) return;
+      const payloadPlayerIds = selectedPlayerIds.slice(
+        0,
+        rosterLimit ? rosterLimit : selectedPlayerIds.length
+      );
+      await api.registerForTournament(id, {
+        teamId: selectedTeam.id,
+        playerIds: payloadPlayerIds,
+      });
       toast.success("Successfully registered for tournament!")
       setShowRegisterDialog(false)
     } catch (error: any) {
@@ -139,6 +221,25 @@ export default function TournamentDetailPage() {
       setRegistering(false)
     }
   }
+
+  const handleRosterToggle = (playerId: string, next: boolean | "indeterminate") => {
+    if (!playerId) return;
+    const shouldSelect = next === true;
+    if (shouldSelect) {
+      setSelectedPlayerIds((prev) => {
+        if (prev.includes(playerId)) return prev;
+        if (rosterLimit && prev.length >= rosterLimit) {
+          return prev;
+        }
+        return [...prev, playerId];
+      });
+    } else {
+      setSelectedPlayerIds((prev) => prev.filter((id) => id !== playerId));
+    }
+  };
+
+  const confirmDisabled =
+    registering || !selectedTeam || selectedPlayerIds.length === 0 || !rosterSelectionValid;
 
   const handleStart = async () => {
     if (!id) return;
@@ -274,7 +375,7 @@ export default function TournamentDetailPage() {
                 {user ? (
                   <>
                     {tournament.status === "upcoming" ? (
-                      (isTeamManager || isCaptain) ? (
+                      canRegisterTeam ? (
                         <Button
                           onClick={() => setShowRegisterDialog(true)}
                           size="lg"
@@ -447,6 +548,15 @@ export default function TournamentDetailPage() {
                               <div className="flex flex-col">
                                 <span className="font-medium">{p.name}</span>
                                 <span className="text-xs text-muted-foreground">{p.teamId}</span>
+                                {p.players && p.players.length > 0 && (
+                                  <div className="mt-2 flex flex-wrap gap-1">
+                                    {p.players.map((player) => (
+                                      <Badge key={player.id} variant="outline" className="text-[10px] h-4 px-1.5">
+                                        {player.username || player.email || player.id}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <Badge variant="outline" className="text-xs">Registered</Badge>
@@ -535,7 +645,9 @@ export default function TournamentDetailPage() {
                     </div>
                     <div className="flex items-center justify-between py-2 border-b border-white/5">
                       <span className="text-muted-foreground text-sm">Mode</span>
-                      <span className="font-medium">5v5</span>
+                      <span className="font-medium">
+                        {tournament.rosterSize ? `${tournament.rosterSize}v${tournament.rosterSize}` : "Team"}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between py-2 border-b border-white/5">
                       <span className="text-muted-foreground text-sm">Platform</span>
@@ -575,37 +687,97 @@ export default function TournamentDetailPage() {
           <DialogHeader>
             <DialogTitle>Register for Tournament</DialogTitle>
             <DialogDescription>
-              {isTeamManager
-                ? "Select which team you want to register for this tournament"
-                : "Confirm your team registration for this tournament"}
+            {ownedTeams.length
+              ? "Select which team you want to register and lock in the roster."
+              : "Confirm the roster that will represent your team in this tournament."}
             </DialogDescription>
           </DialogHeader>
-          {(isTeamManager || isCaptain) && (
-            <div className="py-4">
-              {isTeamManager ? (
-                <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your team" />
-                </SelectTrigger>
-                <SelectContent>
-                  {managerTeams.length === 0 && (
-                    <SelectItem value="" disabled>No teams found</SelectItem>
-                  )}
-                  {managerTeams.map(t => (
-                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
-                </SelectContent>
-                </Select>
+          {canRegisterTeam ? (
+            <div className="py-4 space-y-6">
+              {ownedTeams.length ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Team</p>
+                  <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ownedTeams.length === 0 && (
+                        <SelectItem value="" disabled>
+                          No teams found
+                        </SelectItem>
+                      )}
+                      {ownedTeams.map((team) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               ) : (
                 <div className="text-sm text-muted-foreground">
-                  You will register your team automatically.
+                  You will register{" "}
+                  <span className="font-medium">{membershipTeam?.name || "your team"}</span> automatically.
                 </div>
               )}
-              {isTeamManager && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Note: Team selection will be populated from your actual teams
-                </p>
-              )}
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-muted-foreground">Select Players</p>
+                  {rosterLimit && (
+                    <span className="text-xs text-muted-foreground">
+                      {requiresRosterSelection
+                        ? `Choose ${rosterLimit}`
+                        : `Up to ${rosterLimit}`}
+                    </span>
+                  )}
+                </div>
+                <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                  {selectedTeam?.members && selectedTeam.members.length > 0 ? (
+                    selectedTeam.members.map((member) => {
+                      const memberId = member.id;
+                      if (!memberId) return null;
+                      const isManager = memberId === selectedTeam.managerId;
+                      const isCaptainBadge = selectedTeam.captainIds?.includes(memberId);
+                      const lockedOut =
+                        rosterLimit &&
+                        !selectedPlayerIds.includes(memberId) &&
+                        selectedPlayerIds.length >= rosterLimit;
+                      return (
+                        <label
+                          key={memberId}
+                          className="flex items-center justify-between rounded-lg border border-white/10 bg-background/30 px-3 py-2 text-sm"
+                        >
+                          <div>
+                            <p className="font-medium">{member.username || member.email || memberId}</p>
+                            <div className="flex gap-2 text-xs text-muted-foreground">
+                              {isManager && <Badge variant="outline">Manager</Badge>}
+                              {isCaptainBadge && <Badge variant="outline">Captain</Badge>}
+                            </div>
+                          </div>
+                          <Checkbox
+                            checked={selectedPlayerIds.includes(memberId)}
+                            onCheckedChange={(checked) => handleRosterToggle(memberId, checked)}
+                            disabled={lockedOut}
+                          />
+                        </label>
+                      );
+                    })
+                  ) : (
+                    <div className="text-sm text-muted-foreground">
+                      This team has no members yet.
+                    </div>
+                  )}
+                </div>
+                {requiresRosterSelection && !rosterSelectionValid && (
+                  <p className="text-xs text-destructive">Select exactly {rosterLimit} players.</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="py-4 text-sm text-muted-foreground">
+              You do not have permission to register a team for this event.
             </div>
           )}
           <DialogFooter>
@@ -615,7 +787,7 @@ export default function TournamentDetailPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleRegister} disabled={registering}>
+            <Button onClick={handleRegister} disabled={confirmDisabled}>
               {registering ? "Registering..." : "Confirm Registration"}
             </Button>
           </DialogFooter>

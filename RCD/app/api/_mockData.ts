@@ -59,6 +59,7 @@ export type MockTournament = {
   currentParticipants?: number
   prizePool?: string
   game?: string
+  rosterSize?: number
   payout?: {
     total: number
     awards: Array<{ teamId: string; amount: number }>
@@ -217,6 +218,7 @@ if (!tournaments.length) {
       maxParticipants: 32,
       currentParticipants: 10,
       game: "Valorant",
+      rosterSize: 5,
     },
     {
       id: "a2",
@@ -227,6 +229,7 @@ if (!tournaments.length) {
       maxParticipants: 16,
       currentParticipants: 8,
       game: "League of Legends",
+      rosterSize: 5,
     }
   );
 }
@@ -546,6 +549,7 @@ export function addTournament(data: Partial<MockTournament>) {
     currentParticipants: data.currentParticipants || 0,
     prizePool: data.prizePool,
     game: data.game,
+    rosterSize: typeof data.rosterSize === "number" ? data.rosterSize : 5,
   }
   tournaments.push(t)
   log("system", "create_tournament", `Tournament ${t.title} (${t.id}) created`)
