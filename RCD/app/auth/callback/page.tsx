@@ -16,7 +16,10 @@ export default function AuthCallbackPage() {
   const { completeOAuthLogin } = useAuth()
   const token = params.get("token")
   const error = params.get("error")
-  const provider = params.get("provider") || "discord"
+  const provider = params.get("provider") || "account"
+  const providerLabel = provider
+    ? provider.charAt(0).toUpperCase() + provider.slice(1)
+    : "Account"
   const returnTo = params.get("returnTo") || "/dashboard"
   const needsEmail = params.get("needsEmail") === "1"
   const [status, setStatus] = useState<"processing" | "error">("processing")
@@ -57,7 +60,7 @@ export default function AuthCallbackPage() {
             <CardContent className="flex flex-col items-center gap-4 py-8">
               <Loader2 className="w-10 h-10 text-primary animate-spin" />
               <p className="text-sm text-muted-foreground">
-                Finishing {provider.charAt(0).toUpperCase() + provider.slice(1)} authentication
+                Finishing {providerLabel} authentication
               </p>
             </CardContent>
           </Card>
@@ -76,7 +79,7 @@ export default function AuthCallbackPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              We couldn't complete the {provider} sign-in flow. Try again or use email & password instead.
+              We couldn't complete the {providerLabel} sign-in flow. Try again or use email & password instead.
             </p>
             <div className="flex flex-col gap-2">
               <Button onClick={() => router.push("/login")} className="w-full">

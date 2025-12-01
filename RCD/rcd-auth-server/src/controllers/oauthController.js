@@ -19,6 +19,11 @@ const DISCORD_ENABLED = Boolean(
   process.env.DISCORD_CLIENT_SECRET &&
   process.env.DISCORD_CALLBACK_URL
 );
+const GOOGLE_ENABLED = Boolean(
+  process.env.GOOGLE_CLIENT_ID &&
+  process.env.GOOGLE_CLIENT_SECRET &&
+  process.env.GOOGLE_CALLBACK_URL
+);
 
 function buildStatePayload(req) {
   const mode = req.query?.mode === 'link' ? 'link' : 'login';
@@ -102,5 +107,6 @@ module.exports = {
   successRedirect,
   failureRedirect,
   DISCORD_ENABLED,
+  GOOGLE_ENABLED,
 };
 

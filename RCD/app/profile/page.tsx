@@ -46,6 +46,11 @@ function labelForGameId(key: string): string {
   return map[key] || key
 }
 
+const oauthAccounts = [
+  { provider: "discord", label: "Discord" },
+  { provider: "google", label: "Google" },
+];
+
 function ProfileContent() {
   const { user, refreshUser, beginOAuth, unlinkProvider } = useAuth()
   const [editing, setEditing] = useState(false)
@@ -86,8 +91,6 @@ function ProfileContent() {
   const [providerBusy, setProviderBusy] = useState<string | null>(null)
 
   const connectedProviders = user?.providers || []
-  const hasDiscord = connectedProviders.some((p) => p.provider === "discord")
-  const discordProvider = connectedProviders.find((p) => p.provider === "discord")
   const needsVerifiedEmail = !user?.email || user.email.endsWith("@oauth.local")
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -606,49 +609,58 @@ function ProfileContent() {
                           Linked Accounts
                         </h3>
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between p-4 rounded-xl bg-background/40 border border-white/5">
-                            <div>
-                              <p className="font-medium">Discord</p>
-                              {hasDiscord ? (
-                                <p className="text-xs text-muted-foreground">
-                                  Connected {discordProvider?.linkedAt ? new Date(discordProvider.linkedAt).toLocaleDateString() : ""}
-                                </p>
-                              ) : (
-                                <p className="text-xs text-muted-foreground">Not connected</p>
-                              )}
-                            </div>
-                            {hasDiscord ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-white/10"
-                                disabled={providerBusy === "discord"}
-                                onClick={async () => {
-                                  setProviderBusy("discord")
-                                  try {
-                                    await unlinkProvider("discord")
-                                    toast.success("Discord disconnected")
-                                  } catch (error: any) {
-                                    toast.error(error?.message || "Failed to disconnect Discord")
-                                  } finally {
-                                    setProviderBusy(null)
-                                  }
-                                }}
-                              >
-                                <Unplug className="w-4 h-4 mr-2" />
-                                Disconnect
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                className="shadow-primary/20 shadow-lg"
-                                onClick={() => beginOAuth("discord", "link", "/profile")}
-                              >
-                                <Link2 className="w-4 h-4 mr-2" />
-                                Connect
-                              </Button>
-                            )}
-                          </div>
+                          {oauthAccounts.map(({ provider, label }) => {
+                            const providerEntry = connectedProviders.find((p) => p.provider === provider)
+                            const isConnected = Boolean(providerEntry)
+                            return (
+                              <div key={provider} className="flex items-center justify-between p-4 rounded-xl bg-background/40 border border-white/5">
+                                <div>
+                                  <p className="font-medium">{label}</p>
+                                  {isConnected ? (
+                                    <p className="text-xs text-muted-foreground">
+                                      Connected{" "}
+                                      {providerEntry?.linkedAt
+                                        ? new Date(providerEntry.linkedAt).toLocaleDateString()
+                                        : ""}
+                                    </p>
+                                  ) : (
+                                    <p className="text-xs text-muted-foreground">Not connected</p>
+                                  )}
+                                </div>
+                                {isConnected ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-white/10"
+                                    disabled={providerBusy === provider}
+                                    onClick={async () => {
+                                      setProviderBusy(provider)
+                                      try {
+                                        await unlinkProvider(provider)
+                                        toast.success(`${label} disconnected`)
+                                      } catch (error: any) {
+                                        toast.error(error?.message || `Failed to disconnect ${label}`)
+                                      } finally {
+                                        setProviderBusy(null)
+                                      }
+                                    }}
+                                  >
+                                    <Unplug className="w-4 h-4 mr-2" />
+                                    Disconnect
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    className="shadow-primary/20 shadow-lg"
+                                    onClick={() => beginOAuth(provider, "link", "/profile")}
+                                  >
+                                    <Link2 className="w-4 h-4 mr-2" />
+                                    Connect
+                                  </Button>
+                                )}
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
 

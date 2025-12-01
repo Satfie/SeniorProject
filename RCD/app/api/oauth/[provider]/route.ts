@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const SUPPORTED_PROVIDERS = new Set(["discord"]);
+const SUPPORTED_PROVIDERS = new Set(["discord", "google"]);
 
 function resolveAuthBaseUrl() {
   return (

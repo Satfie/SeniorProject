@@ -43,6 +43,9 @@ services:
       - DISCORD_CALLBACK_URL=${DISCORD_CALLBACK_URL}
       - OAUTH_SUCCESS_REDIRECT=${OAUTH_SUCCESS_REDIRECT:-https://eshield.live/auth/callback}
       - OAUTH_FAILURE_REDIRECT=${OAUTH_FAILURE_REDIRECT:-https://eshield.live/login}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3002/health"]

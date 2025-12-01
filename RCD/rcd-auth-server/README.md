@@ -63,21 +63,26 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 ## License
 This project is licensed under the MIT License.
 
-## Discord OAuth
+## OAuth Providers
 
-Set the following environment variables to enable Discord login/linking:
+Set the following environment variables to enable Discord or Google login/linking:
 
 ```
 DISCORD_CLIENT_ID=<client-id>
 DISCORD_CLIENT_SECRET=<client-secret>
 DISCORD_CALLBACK_URL=http://localhost:3002/api/auth/discord/callback
+
+GOOGLE_CLIENT_ID=<client-id>
+GOOGLE_CLIENT_SECRET=<client-secret>
+GOOGLE_CALLBACK_URL=http://localhost:3002/api/auth/google/callback
+
 OAUTH_SUCCESS_REDIRECT=http://localhost:3000/auth/callback
 OAUTH_FAILURE_REDIRECT=http://localhost:3000/login
 ```
 
 Routes exposed:
-- `GET /api/auth/discord` – initiate the OAuth flow
-- `GET /api/auth/discord/callback` – complete the flow, issue JWT, redirect to the frontend
+- `GET /api/auth/:provider` – initiate the OAuth flow (`provider` = `discord` or `google`)
+- `GET /api/auth/:provider/callback` – complete the flow, issue JWT, redirect to the frontend
 - `DELETE /api/auth/providers/:provider` – unlink a provider for the authenticated user
 
-During the callback we look up/create users by provider ID or email, avoid duplicates, and store provider metadata under `user.providers`.
+During the callback we look up/create users by provider ID or email, avoid duplicates, and store provider metadata under `user.providers`. The same router is also mounted at `/auth/...` so you can register either `/api/auth/*` or `/auth/*` as your OAuth redirect URIs.

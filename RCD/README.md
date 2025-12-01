@@ -311,9 +311,10 @@ Automate via cron; sync backups off-host.
 
 ## OAuth Providers
 
-- Discord SSO is enabled whenever the auth server exposes `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, and `DISCORD_CALLBACK_URL`.
+- **Discord** – requires `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_CALLBACK_URL`
+- **Google** – requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`
 - Optional overrides:
   - `OAUTH_SUCCESS_REDIRECT` (defaults to `/auth/callback`)
   - `OAUTH_FAILURE_REDIRECT` (defaults to `/login`)
-- The frontend proxies `/api/oauth/discord` to the auth service and finishes the flow via `/auth/callback`.
-- Logged-in users can link/unlink Discord from **Profile → Linked Accounts**. If the provider does not send an email, the profile page shows a warning banner so players can add a valid address before joining tournaments.
+- The frontend proxies `/api/oauth/[provider]` to the auth service and finishes the flow via `/auth/callback`.
+- Logged-in users can link/unlink accounts under **Profile → Linked Accounts**. If a provider does not return an email, the profile page shows a warning banner so players can add a valid address before joining tournaments.

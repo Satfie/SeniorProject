@@ -9,6 +9,7 @@ const {
   handleOAuthSuccess,
   failureRedirect,
   DISCORD_ENABLED,
+  GOOGLE_ENABLED,
   unlinkProvider,
 } = require('../controllers/oauthController');
 const { decodeState, writeStateCookie, consumeStateCookie } = require('../utils/oauthState');
@@ -25,35 +26,52 @@ router.post('/register', registerUser);
 router.post('/change-password', authMiddleware, changePassword);
 
 // OAuth: Discord
-router.get('/discord', (req, res, next) => {
-  if (!DISCORD_ENABLED) {
-    return res.status(503).json({ message: 'Discord login is not configured' });
-  }
-  const state = encodeState(buildStatePayload(req));
-  writeStateCookie(res, state);
-  passport.authenticate('discord', {
+const oauthProviders = [
+  {
+    name: 'discord',
+    enabled: () => DISCORD_ENABLED,
+    strategy: 'discord',
     scope: ['identify', 'email'],
-    session: false,
-    state,
-  })(req, res, next);
-});
-
-router.get(
-  '/discord/callback',
-  (req, res, next) => {
-    const inlineState = decodeState(req.query?.state);
-    const cookieStateRaw = consumeStateCookie(req, res);
-    const cookieState = decodeState(cookieStateRaw);
-    req.oauthState =
-      inlineState && Object.keys(inlineState).length > 0 ? inlineState : cookieState;
-    next();
   },
-  passport.authenticate('discord', {
-    failureRedirect,
-    session: false,
-  }),
-  handleOAuthSuccess
-);
+  {
+    name: 'google',
+    enabled: () => GOOGLE_ENABLED,
+    strategy: 'google',
+    scope: ['profile', 'email'],
+  },
+];
+
+oauthProviders.forEach(({ name, enabled, strategy, scope }) => {
+  router.get(`/${name}`, (req, res, next) => {
+    if (!enabled()) {
+      return res.status(503).json({ message: `${name} login is not configured` });
+    }
+    const state = encodeState(buildStatePayload(req));
+    writeStateCookie(res, state);
+    passport.authenticate(strategy, {
+      scope,
+      session: false,
+      state,
+    })(req, res, next);
+  });
+
+  router.get(
+    `/${name}/callback`,
+    (req, res, next) => {
+      const inlineState = decodeState(req.query?.state);
+      const cookieStateRaw = consumeStateCookie(req, res);
+      const cookieState = decodeState(cookieStateRaw);
+      req.oauthState =
+        inlineState && Object.keys(inlineState).length > 0 ? inlineState : cookieState;
+      next();
+    },
+    passport.authenticate(strategy, {
+      failureRedirect,
+      session: false,
+    }),
+    handleOAuthSuccess
+  );
+});
 
 router.delete('/providers/:provider', authMiddleware, unlinkProvider);
 

@@ -103,6 +103,7 @@ async function start() {
 
   // Routes
   app.use('/api/auth', authRoutes);
+  app.use('/auth', authRoutes);
   app.use('/api/tournaments', tournamentsRoutes);
   app.use('/api/teams', teamsRoutes);
   app.use('/api/users', usersRoutes);

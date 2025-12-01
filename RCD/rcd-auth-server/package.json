@@ -16,7 +16,8 @@
     "mongodb-memory-server": "^10.3.0",
     "mongoose": "^6.13.8",
     "passport": "^0.7.0",
-    "passport-discord": "^0.1.4"
+    "passport-discord": "^0.1.4",
+    "passport-google-oauth20": "^2.0.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.15"

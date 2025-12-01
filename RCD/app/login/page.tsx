@@ -153,7 +153,12 @@ export default function LoginPage() {
                     >
                       Discord
                     </Button>
-                    <Button type="button" variant="outline" className="w-full bg-background/50" disabled>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full bg-background/50"
+                      onClick={() => beginOAuth("google", "login")}
+                    >
                       Google
                     </Button>
                   </div>
