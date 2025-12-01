@@ -9,6 +9,7 @@ import {
   useCallback,
 } from "react";
 import { api, type User } from "./api"
+import { buildOAuthStartUrl } from "./oauth-client"
 import { useRouter } from "next/navigation"
 
 interface AuthContextType {
@@ -18,6 +19,9 @@ interface AuthContextType {
   register: (email: string, password: string, username?: string) => Promise<void>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
+  beginOAuth: (provider: string, mode?: "login" | "link", returnTo?: string) => void
+  completeOAuthLogin: (token: string, returnTo?: string) => Promise<void>
+  unlinkProvider: (provider: string) => Promise<void>
   isAdmin: boolean
   isTeamManager: boolean
   isPlayer: boolean
@@ -86,6 +90,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return fetchUser();
   }, [fetchUser]);
 
+  const beginOAuth = useCallback(
+    (provider: string, mode: "login" | "link" = "login", returnTo?: string) => {
+      if (typeof window === "undefined") return;
+      const token =
+        mode === "link" ? localStorage.getItem("rcd_token") || undefined : undefined;
+      const url = buildOAuthStartUrl(provider, { mode, token, returnTo });
+      window.location.href = url;
+    },
+    []
+  );
+
+  const completeOAuthLogin = useCallback(
+    async (token: string, returnTo?: string) => {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("rcd_token", token);
+      }
+      await fetchUser();
+      router.push(returnTo || "/dashboard");
+    },
+    [fetchUser, router]
+  );
+
+  const unlinkProvider = useCallback(
+    async (provider: string) => {
+      await api.unlinkProvider(provider);
+      await refreshUser();
+    },
+    [refreshUser]
+  );
+
   // Listen for team approval event to refresh user (updates teamId immediately after notification)
   const handleTeamApproved = useCallback(() => {
     void refreshUser();
@@ -112,6 +146,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         refreshUser,
+        beginOAuth,
+        completeOAuthLogin,
+        unlinkProvider,
         isAdmin,
         isTeamManager,
         isPlayer,

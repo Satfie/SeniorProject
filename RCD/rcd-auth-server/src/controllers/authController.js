@@ -7,7 +7,8 @@ exports.loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const user = await User.findOne({ email });
+        const normalizedEmail = User.normalizeEmail(email);
+        const user = await User.findOne({ email: normalizedEmail });
         if (!user || !(await user.comparePassword(password))) {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
@@ -16,12 +17,7 @@ exports.loginUser = async (req, res) => {
         const token = user.generateAuthToken();
         res.status(200).json({
             token,
-            user: {
-                id: user._id,
-                email: user.email,
-                username: user.username || undefined,
-                role: user.role || 'player'
-            }
+            user: user.toSafeObject(),
         });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
@@ -40,8 +36,9 @@ exports.registerUser = async (req, res) => {
             return res.status(400).json({ message: 'Email and password are required' });
         }
 
+        const normalizedEmail = User.normalizeEmail(email);
         const [existingEmail, existingUsername] = await Promise.all([
-            User.findOne({ email }),
+            User.findOne({ email: normalizedEmail }),
             User.findOne({ username })
         ]);
 
@@ -52,19 +49,14 @@ exports.registerUser = async (req, res) => {
             return res.status(400).json({ message: 'Username is already taken' });
         }
 
-        const newUser = new User({ email, password, username: username.trim(), role: 'player' });
+        const newUser = new User({ email: normalizedEmail, password, username: username.trim(), role: 'player' });
         await newUser.save();
 
         // Generate token
         const token = newUser.generateAuthToken();
         res.status(201).json({
             token,
-            user: {
-                id: newUser._id,
-                email: newUser.email,
-                username: newUser.username,
-                role: newUser.role || 'player'
-            }
+            user: newUser.toSafeObject(),
         });
     } catch (error) {
         // Handle duplicate key errors from the DB

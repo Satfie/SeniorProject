@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Loader2, User, Gamepad2, Globe, Lock, Camera, Mail, MapPin, Clock, Trophy, Activity, Zap, Award } from "lucide-react";
+import { Loader2, User, Gamepad2, Globe, Lock, Camera, Mail, MapPin, Clock, Trophy, Activity, Zap, Award, Link2, Unplug, AlertTriangle } from "lucide-react";
 import { toast } from "sonner"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -47,7 +47,7 @@ function labelForGameId(key: string): string {
 }
 
 function ProfileContent() {
-  const { user, refreshUser } = useAuth()
+  const { user, refreshUser, beginOAuth, unlinkProvider } = useAuth()
   const [editing, setEditing] = useState(false)
   const [activeTab, setActiveTab] = useState<"overview" | "gameIds" | "general">("overview")
   const [username, setUsername] = useState(user?.username || "")
@@ -83,6 +83,12 @@ function ProfileContent() {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [providerBusy, setProviderBusy] = useState<string | null>(null)
+
+  const connectedProviders = user?.providers || []
+  const hasDiscord = connectedProviders.some((p) => p.provider === "discord")
+  const discordProvider = connectedProviders.find((p) => p.provider === "discord")
+  const needsVerifiedEmail = !user?.email || user.email.endsWith("@oauth.local")
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -237,7 +243,34 @@ function ProfileContent() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 -mt-8 relative z-30 max-w-5xl">
+      <div className="container mx-auto px-4 -mt-8 relative z-30 max-w-5xl space-y-6">
+        {needsVerifiedEmail && (
+          <AnimatedSection delay={50}>
+            <Card className="border-yellow-500/30 bg-yellow-500/5 backdrop-blur">
+              <CardContent className="flex flex-col md:flex-row items-start md:items-center gap-4 py-4">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                  <div>
+                    <p className="font-semibold text-yellow-500">Add a real email address</p>
+                    <p className="text-xs text-yellow-200/80">
+                      We couldn&apos;t get an email from your provider. Update it now to receive tournament updates.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="ml-auto border-yellow-500/40 text-yellow-500 hover:bg-yellow-500/10"
+                  onClick={() => {
+                    setEditing(true)
+                    setActiveTab("general")
+                  }}
+                >
+                  Update email
+                </Button>
+              </CardContent>
+            </Card>
+          </AnimatedSection>
+        )}
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Sidebar Navigation */}
           <div className="lg:col-span-1 space-y-6">
@@ -567,11 +600,65 @@ function ProfileContent() {
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                       {/* Overview Tab (read-only) */}
                       
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
+                          <Link2 className="w-4 h-4" />
+                          Linked Accounts
+                        </h3>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between p-4 rounded-xl bg-background/40 border border-white/5">
+                            <div>
+                              <p className="font-medium">Discord</p>
+                              {hasDiscord ? (
+                                <p className="text-xs text-muted-foreground">
+                                  Connected {discordProvider?.linkedAt ? new Date(discordProvider.linkedAt).toLocaleDateString() : ""}
+                                </p>
+                              ) : (
+                                <p className="text-xs text-muted-foreground">Not connected</p>
+                              )}
+                            </div>
+                            {hasDiscord ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-white/10"
+                                disabled={providerBusy === "discord"}
+                                onClick={async () => {
+                                  setProviderBusy("discord")
+                                  try {
+                                    await unlinkProvider("discord")
+                                    toast.success("Discord disconnected")
+                                  } catch (error: any) {
+                                    toast.error(error?.message || "Failed to disconnect Discord")
+                                  } finally {
+                                    setProviderBusy(null)
+                                  }
+                                }}
+                              >
+                                <Unplug className="w-4 h-4 mr-2" />
+                                Disconnect
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                className="shadow-primary/20 shadow-lg"
+                                onClick={() => beginOAuth("discord", "link", "/profile")}
+                              >
+                                <Link2 className="w-4 h-4 mr-2" />
+                                Connect
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator className="bg-white/10" />
+
                       {/* Game IDs (read-only) */}
                       <div className="space-y-4">
                         <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
                           <Gamepad2 className="w-4 h-4" />
-                          Connected Accounts
+                          Game IDs & Handles
                         </h3>
                         <div className="grid gap-4 md:grid-cols-2">
                           {Object.entries(user?.gameIds || {}).filter(([, v]) => !!v)

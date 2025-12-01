@@ -12,6 +12,7 @@ A modern, professional esports tournament management platform built with Next.js
 - **Admin Panel**: Comprehensive admin tools for managing users, teams, and tournaments
 - **Internal System**: Integrated internal admin dashboard available at `/internal/admin/*` (visible only when logged in)
 - **Modern UI**: Dark theme with Esports-inspired design and responsive layout
+- **Discord Login**: Built-in OAuth flow for one-click sign-in/linking (with email fallback prompts)
 
 ## Tech Stack
 
@@ -307,3 +308,12 @@ Automate via cron; sync backups off-host.
 \`\`\`
 
 ```json file="" isHidden
+
+## OAuth Providers
+
+- Discord SSO is enabled whenever the auth server exposes `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, and `DISCORD_CALLBACK_URL`.
+- Optional overrides:
+  - `OAUTH_SUCCESS_REDIRECT` (defaults to `/auth/callback`)
+  - `OAUTH_FAILURE_REDIRECT` (defaults to `/login`)
+- The frontend proxies `/api/oauth/discord` to the auth service and finishes the flow via `/auth/callback`.
+- Logged-in users can link/unlink Discord from **Profile → Linked Accounts**. If the provider does not send an email, the profile page shows a warning banner so players can add a valid address before joining tournaments.

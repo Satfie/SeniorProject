@@ -14,7 +14,7 @@ import { toast } from "sonner"
 import { AnimatedSection } from "@/components/ui/animated-section"
 
 export default function LoginPage() {
-  const { login } = useAuth()
+  const { login, beginOAuth } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -145,10 +145,15 @@ export default function LoginPage() {
                   </div>
 
                   <div className="mt-6 grid grid-cols-2 gap-3">
-                    <Button variant="outline" className="w-full bg-background/50">
-                      Github
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full bg-background/50"
+                      onClick={() => beginOAuth("discord", "login")}
+                    >
+                      Discord
                     </Button>
-                    <Button variant="outline" className="w-full bg-background/50">
+                    <Button type="button" variant="outline" className="w-full bg-background/50" disabled>
                       Google
                     </Button>
                   </div>

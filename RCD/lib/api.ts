@@ -36,6 +36,13 @@ function shouldUseDirectApi() {
   return FORCE_DIRECT_API;
 }
 
+export interface UserProvider {
+  provider: string;
+  providerId: string;
+  displayName?: string;
+  linkedAt?: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -69,6 +76,7 @@ export interface User {
     streetFighter?: string;
     smashBros?: string;
   }
+  providers?: UserProvider[];
 }
 
 export interface Tournament {
@@ -329,6 +337,12 @@ class ApiClient {
     if (typeof window !== "undefined") {
       localStorage.removeItem("rcd_token");
     }
+  }
+
+  async unlinkProvider(provider: string) {
+    return this.request<User>(`/api/auth/providers/${provider}`, {
+      method: "DELETE",
+    });
   }
 
   // Tournament endpoints

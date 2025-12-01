@@ -38,6 +38,11 @@ services:
       - JWT_SECRET=dev_super_secret_jwt
       - USE_MEMORY_DB=false
       - AUTO_CREATE_ADMIN=false
+      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
+      - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET}
+      - DISCORD_CALLBACK_URL=${DISCORD_CALLBACK_URL}
+      - OAUTH_SUCCESS_REDIRECT=${OAUTH_SUCCESS_REDIRECT:-https://eshield.live/auth/callback}
+      - OAUTH_FAILURE_REDIRECT=${OAUTH_FAILURE_REDIRECT:-https://eshield.live/login}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
