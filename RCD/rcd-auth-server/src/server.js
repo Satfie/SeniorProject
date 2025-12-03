@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 // Silence strictQuery deprecation warning by explicitly setting desired behavior
 mongoose.set('strictQuery', true);
 const dotenv = require('dotenv');
+const fs = require('fs');
+const path = require('path');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const tournamentsRoutes = require('./routes/tournaments');
@@ -19,7 +21,22 @@ try {
   ({ MongoMemoryServer } = require('mongodb-memory-server'));
 } catch (_) {}
 
-dotenv.config();
+// Prefer .env.local over .env, else rely on process env
+(() => {
+  const cwd = process.cwd();
+  const envLocal = path.join(cwd, '.env.local');
+  const envDefault = path.join(cwd, '.env');
+  if (fs.existsSync(envLocal)) {
+    dotenv.config({ path: envLocal });
+    console.log('[env] Loaded .env.local');
+  } else if (fs.existsSync(envDefault)) {
+    dotenv.config({ path: envDefault });
+    console.log('[env] Loaded .env');
+  } else {
+    dotenv.config();
+    console.log('[env] No .env/.env.local found; relying on process environment');
+  }
+})();
 
 async function ensureDefaultAdmin() {
   if (!process.env.AUTO_CREATE_ADMIN || process.env.AUTO_CREATE_ADMIN !== 'true') return;
