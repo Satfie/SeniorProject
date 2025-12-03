@@ -12,6 +12,7 @@ import Link from "next/link"
 import { Trophy, Loader2, ArrowRight, Shield, Gamepad2 } from "lucide-react"
 import { toast } from "sonner"
 import { AnimatedSection } from "@/components/ui/animated-section"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 export default function LoginPage() {
   const { login, beginOAuth } = useAuth()
@@ -158,27 +159,49 @@ export default function LoginPage() {
                   </div>
 
                   <div className="mt-6 grid grid-cols-2 gap-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full bg-background/50"
-                      disabled={!providerStatus.discord}
-                      title={!providerStatus.discord ? "Discord sign-in is not configured" : undefined}
-                      onClick={() => beginOAuth("discord", "login")}
-                    >
-                      Discord
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full bg-background/50"
-                      disabled={!providerStatus.google}
-                      title={!providerStatus.google ? "Google sign-in is not configured" : undefined}
-                      onClick={() => beginOAuth("google", "login")}
-                    >
-                      Google
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full bg-background/50 transition-transform hover:scale-[1.01]"
+                          disabled={!providerStatus.discord}
+                          onClick={() => beginOAuth("discord", "login")}
+                        >
+                          {/* Minimal brand feel: emoji as placeholder without external assets */}
+                          <span className="mr-2">🟣</span>
+                          Discord
+                        </Button>
+                      </TooltipTrigger>
+                      {!providerStatus.discord && (
+                        <TooltipContent sideOffset={8}>Discord sign-in is not configured</TooltipContent>
+                      )}
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full bg-background/50 transition-transform hover:scale-[1.01]"
+                          disabled={!providerStatus.google}
+                          onClick={() => beginOAuth("google", "login")}
+                        >
+                          <span className="mr-2">🔴</span>
+                          Google
+                        </Button>
+                      </TooltipTrigger>
+                      {!providerStatus.google && (
+                        <TooltipContent sideOffset={8}>Google sign-in is not configured</TooltipContent>
+                      )}
+                    </Tooltip>
                   </div>
+
+                  {!providerStatus.discord && !providerStatus.google && (
+                    <p className="mt-3 text-xs text-muted-foreground text-center">
+                      Third‑party sign‑in is unavailable. Please use email and password.
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
