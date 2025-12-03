@@ -92,6 +92,15 @@ function ProfileContent() {
 
   const connectedProviders = user?.providers || []
   const needsVerifiedEmail = !user?.email || user.email.endsWith("@oauth.local")
+  const externalProviders = connectedProviders.filter((p) => p.provider !== "password")
+  const totalUsable = externalProviders.length + (needsVerifiedEmail ? 0 : 1)
+  const canDisconnect = (provider: string) => {
+    const isExternal = provider !== "password"
+    if (!isExternal) return false
+    if (totalUsable <= 1) return false
+
+    return true
+  }
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -628,26 +637,29 @@ function ProfileContent() {
                                   )}
                                 </div>
                                 {isConnected ? (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="border-white/10"
-                                    disabled={providerBusy === provider}
-                                    onClick={async () => {
-                                      setProviderBusy(provider)
-                                      try {
-                                        await unlinkProvider(provider)
-                                        toast.success(`${label} disconnected`)
-                                      } catch (error: any) {
-                                        toast.error(error?.message || `Failed to disconnect ${label}`)
-                                      } finally {
-                                        setProviderBusy(null)
-                                      }
-                                    }}
-                                  >
-                                    <Unplug className="w-4 h-4 mr-2" />
-                                    Disconnect
-                                  </Button>
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="border-white/10"
+                                      disabled={providerBusy === provider || !canDisconnect(provider)}
+                                      title={!canDisconnect(provider) ? "This is your only login method. Add another before removing." : undefined}
+                                      onClick={async () => {
+                                        setProviderBusy(provider)
+                                        try {
+                                          await unlinkProvider(provider)
+                                          toast.success(`${label} disconnected`)
+                                        } catch (error: any) {
+                                          toast.error(error?.message || `Failed to disconnect ${label}`)
+                                        } finally {
+                                          setProviderBusy(null)
+                                        }
+                                      }}
+                                    >
+                                      <Unplug className="w-4 h-4 mr-2" />
+                                      Disconnect
+                                    </Button>
+                                  </>
                                 ) : (
                                   <Button
                                     size="sm"
@@ -662,6 +674,11 @@ function ProfileContent() {
                             )
                           })}
                         </div>
+                        {totalUsable <= 1 && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            You need at least one login method linked before removing your current one.
+                          </p>
+                        )}
                       </div>
 
                       <Separator className="bg-white/10" />
