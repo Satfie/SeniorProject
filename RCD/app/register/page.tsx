@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,6 +15,7 @@ import { AnimatedSection } from "@/components/ui/animated-section"
 
 export default function RegisterPage() {
   const { register, beginOAuth } = useAuth()
+  const [providerStatus, setProviderStatus] = useState<{discord: boolean; google: boolean}>({ discord: true, google: true })
   const [email, setEmail] = useState("")
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
@@ -49,6 +50,18 @@ export default function RegisterPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    let mounted = true
+    import("@/lib/api").then(({ api }) => {
+      api.getProviderStatus().then((status) => {
+        if (mounted) setProviderStatus(status)
+      }).catch(() => {
+        // If status endpoint fails, leave buttons enabled
+      })
+    })
+    return () => { mounted = false }
+  }, [])
 
   return (
     <div className="min-h-screen w-full flex flex-row-reverse">
@@ -195,6 +208,8 @@ export default function RegisterPage() {
                       type="button"
                       variant="outline"
                       className="w-full bg-background/50"
+                      disabled={!providerStatus.discord}
+                      title={!providerStatus.discord ? "Discord sign-in is not configured" : undefined}
                       onClick={() => beginOAuth("discord", "login")}
                     >
                       Discord
@@ -203,6 +218,8 @@ export default function RegisterPage() {
                       type="button"
                       variant="outline"
                       className="w-full bg-background/50"
+                      disabled={!providerStatus.google}
+                      title={!providerStatus.google ? "Google sign-in is not configured" : undefined}
                       onClick={() => beginOAuth("google", "login")}
                     >
                       Google

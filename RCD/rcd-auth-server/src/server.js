@@ -5,6 +5,23 @@ mongoose.set('strictQuery', true);
 const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
+
+// Prefer .env.local over .env, else rely on process env — load BEFORE other imports use env
+(() => {
+  const cwd = process.cwd();
+  const envLocal = path.join(cwd, '.env.local');
+  const envDefault = path.join(cwd, '.env');
+  if (fs.existsSync(envLocal)) {
+    dotenv.config({ path: envLocal });
+    console.log('[env] Loaded .env.local');
+  } else if (fs.existsSync(envDefault)) {
+    dotenv.config({ path: envDefault });
+    console.log('[env] Loaded .env');
+  } else {
+    dotenv.config();
+    console.log('[env] No .env/.env.local found; relying on process environment');
+  }
+})();
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const tournamentsRoutes = require('./routes/tournaments');
@@ -21,22 +38,7 @@ try {
   ({ MongoMemoryServer } = require('mongodb-memory-server'));
 } catch (_) {}
 
-// Prefer .env.local over .env, else rely on process env
-(() => {
-  const cwd = process.cwd();
-  const envLocal = path.join(cwd, '.env.local');
-  const envDefault = path.join(cwd, '.env');
-  if (fs.existsSync(envLocal)) {
-    dotenv.config({ path: envLocal });
-    console.log('[env] Loaded .env.local');
-  } else if (fs.existsSync(envDefault)) {
-    dotenv.config({ path: envDefault });
-    console.log('[env] Loaded .env');
-  } else {
-    dotenv.config();
-    console.log('[env] No .env/.env.local found; relying on process environment');
-  }
-})();
+// (env already loaded above)
 
 async function ensureDefaultAdmin() {
   if (!process.env.AUTO_CREATE_ADMIN || process.env.AUTO_CREATE_ADMIN !== 'true') return;

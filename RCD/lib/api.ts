@@ -333,6 +333,10 @@ class ApiClient {
     return this.request<User>("/api/auth/me");
   }
 
+  async getProviderStatus() {
+    return this.request<{ discord: boolean; google: boolean }>("/api/auth/providers/status");
+  }
+
   logout() {
     if (typeof window !== "undefined") {
       localStorage.removeItem("rcd_token");

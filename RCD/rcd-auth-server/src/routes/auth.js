@@ -75,4 +75,17 @@ oauthProviders.forEach(({ name, enabled, strategy, scope }) => {
 
 router.delete('/providers/:provider', authMiddleware, unlinkProvider);
 
+// Provider status for frontend UI (enabled/disabled)
+router.get('/providers/status', (req, res) => {
+  try {
+    res.json({
+      discord: typeof DISCORD_ENABLED !== 'undefined' ? !!DISCORD_ENABLED : false,
+      google: typeof GOOGLE_ENABLED !== 'undefined' ? !!GOOGLE_ENABLED : false,
+    });
+  } catch (err) {
+    console.error('[oauth] status error', err);
+    res.status(500).json({ message: 'Failed to fetch provider status' });
+  }
+});
+
 module.exports = router;
