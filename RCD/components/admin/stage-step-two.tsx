@@ -1,6 +1,7 @@
 import React from 'react'
 import type { StageFormData } from "./stage-step-one";
 import { CommonSetups } from "./common-setups";
+import { PreviewRoundOne } from "./preview-round-one";
 
 const formats = [
   { id: "single-elimination", name: "Single Elimination" },
@@ -37,6 +38,7 @@ export function StageStepTwo({
         return false
     }
   }
+  const [previewOpen, setPreviewOpen] = React.useState(false)
   return (
     <div className="p-4 border rounded grid gap-3">
       <CommonSetups
@@ -49,6 +51,18 @@ export function StageStepTwo({
             rosterSize: p.rosterSize,
           })
         }
+      />
+      <button
+        type="button"
+        className="justify-self-start border rounded px-3 py-1 text-sm hover:border-blue-400"
+        onClick={() => setPreviewOpen(true)}
+      >
+        Preview Round 1
+      </button>
+      <PreviewRoundOne
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        participants={Number(formData.participants || 0) || 0}
       />
       {formats.map((f) => (
         <button

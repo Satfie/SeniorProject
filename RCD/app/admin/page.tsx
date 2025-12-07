@@ -20,6 +20,9 @@ import {
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Shield, Users, Trophy, Trash2, Edit, Plus, Search, Activity, AlertTriangle, FileText } from "lucide-react"
+import { CommonSetups } from "@/components/admin/common-setups"
+import { PreviewRoundOne } from "@/components/admin/preview-round-one"
+import { validateTournamentConfig } from "@/lib/tournament-rules"
 import { toast } from "sonner"
 import { useSearchParams } from "next/navigation"
 import { AnimatedSection } from "@/components/ui/animated-section"
@@ -58,6 +61,7 @@ function AdminContent() {
     game: "",
     rosterSize: "5",
   });
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   useEffect(() => {
     fetchData();
@@ -142,6 +146,19 @@ function AdminContent() {
           ? Number.parseInt(tournamentForm.rosterSize)
           : undefined,
       };
+
+      const validation = validateTournamentConfig({
+        game: data.game,
+        participants: data.maxParticipants,
+        teams: data.maxParticipants,
+        rosterSize: data.rosterSize,
+        formatType: data.type as any,
+        maxParticipants: data.maxParticipants,
+      })
+      if (!validation.valid) {
+        toast.error(validation.reason || "Invalid tournament configuration")
+        return
+      }
 
       if (editingTournament) {
         await api.updateTournament(editingTournament.id, data);
@@ -782,6 +799,27 @@ function AdminContent() {
                   className="bg-background/50"
                 />
               </div>
+              {/* Common Setups and Preview */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <CommonSetups
+                    game={tournamentForm.game}
+                    applyPreset={(p) =>
+                      setTournamentForm({
+                        ...tournamentForm,
+                        type: p.formatType,
+                        maxParticipants: String(p.teams),
+                        rosterSize: String(p.rosterSize),
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2 flex items-end">
+                  <Button variant="outline" onClick={() => setPreviewOpen(true)}>
+                    Preview Round 1
+                  </Button>
+                </div>
+              </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="type">Type</Label>
@@ -795,15 +833,25 @@ function AdminContent() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="single-elimination">
-                        Single Elimination
-                      </SelectItem>
-                      <SelectItem value="double-elimination">
+                      <SelectItem value="single-elimination">Single Elimination</SelectItem>
+                      {/* Double elim allowed only if power-of-two and >=4 */}
+                      <SelectItem
+                        value="double-elimination"
+                        disabled={(() => {
+                          const n = Number(tournamentForm.maxParticipants || 0)
+                          const okInt = Number.isInteger(n) && n > 0
+                          const isPow2 = okInt && (n & (n - 1)) === 0
+                          return !okInt || n < 4 || !isPow2
+                        })()}
+                      >
                         Double Elimination
                       </SelectItem>
                       <SelectItem value="round-robin">Round Robin</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Double Elimination requires power-of-two teams and at least 4 (e.g., 4, 8, 16).
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
@@ -858,6 +906,9 @@ function AdminContent() {
                     placeholder="e.g., 32"
                     className="bg-background/50"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    For Double Elimination choose power-of-two (4, 8, 16). Single Elimination allows non-power-of-two; BYEs are added.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="rosterSize">Team Size (players)</Label>
@@ -879,6 +930,9 @@ function AdminContent() {
                   <p className="text-xs text-muted-foreground">
                     Choose how many players each team fields (use 1 for 1v1, 2 for 2v2, etc.). Leave blank for flexible teams.
                   </p>
+                  <p className="text-xs text-muted-foreground">
+                    Valid roster size is 1–10. Common presets enforce typical values per game.
+                  </p>
                 </div>
               </div>
               <div className="space-y-2">
@@ -896,6 +950,11 @@ function AdminContent() {
                   className="bg-background/50"
                 />
               </div>
+              <PreviewRoundOne
+                open={previewOpen}
+                onClose={() => setPreviewOpen(false)}
+                participants={Number(tournamentForm.maxParticipants || 0) || 0}
+              />
             </div>
             <DialogFooter>
               <Button
