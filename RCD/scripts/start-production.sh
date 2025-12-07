@@ -6,21 +6,23 @@ set -euo pipefail
 # Customize vars below as needed.
 
 # ---- Configuration ----
-JWT_SECRET="dev_super_secret_jwt"        # Override in secure environments
-MONGO_IMAGE="mongo:6"
-NETWORK_NAME="rcd-network"
-MONGO_CONTAINER="rcd-mongo"
-AUTH_CONTAINER="rcd-auth"
-APP_CONTAINER="rcd-app"
-WEB_CONTAINER="rcd-web"
-MONGO_DB_NAME="rcd"
-SEED_ADMIN="false"                      # Set to true if you want AUTO_CREATE_ADMIN
-ADMIN_EMAIL="admin@example.com"
-ADMIN_PASSWORD="Admin123!"
-WEB_PORT_HOST=8080
-AUTH_PORT_HOST=3002
-APP_PORT_HOST=3001
-MONGO_PORT_HOST=27017
+# Allow override via environment variables
+JWT_SECRET=${JWT_SECRET:-"dev_super_secret_jwt"}        # Override in secure environments
+MONGO_IMAGE=${MONGO_IMAGE:-"mongo:6"}
+NETWORK_NAME=${NETWORK_NAME:-"rcd-network"}
+MONGO_CONTAINER=${MONGO_CONTAINER:-"rcd-mongo"}
+AUTH_CONTAINER=${AUTH_CONTAINER:-"rcd-auth"}
+APP_CONTAINER=${APP_CONTAINER:-"rcd-app"}
+WEB_CONTAINER=${WEB_CONTAINER:-"rcd-web"}
+MONGO_DB_NAME=${MONGO_DB_NAME:-"rcd"}
+SEED_ADMIN=${SEED_ADMIN:-"true"}                      # Auto-create admin by default; set to false to disable
+ADMIN_EMAIL=${ADMIN_EMAIL:-"admin@example.com"}
+ADMIN_PASSWORD=${ADMIN_PASSWORD:-"Admin123!"}
+WEB_PORT_HOST=${WEB_PORT_HOST:-8080}
+AUTH_PORT_HOST=${AUTH_PORT_HOST:-3002}
+APP_PORT_HOST=${APP_PORT_HOST:-3001}
+MONGO_PORT_HOST=${MONGO_PORT_HOST:-27017}
+MONGO_VOLUME_NAME=${MONGO_VOLUME_NAME:-"rcd-mongo-data"}
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 RCD_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -40,13 +42,21 @@ for c in "$WEB_CONTAINER" "$AUTH_CONTAINER" "$APP_CONTAINER"; do
     docker rm -f "${c}" >/dev/null || true
   fi
 done
-# Mongo optional removal if not already attached correctly
+# Mongo setup with persistent volume
+if ! docker volume ls --format '{{.Name}}' | grep -q "^${MONGO_VOLUME_NAME}$"; then
+  log "Creating Mongo volume ${MONGO_VOLUME_NAME}";
+  docker volume create "${MONGO_VOLUME_NAME}" >/dev/null
+fi
+
+# Start or reattach Mongo
 if docker ps -a --format '{{.Names}}' | grep -q "^${MONGO_CONTAINER}$"; then
   log "Mongo container already exists; ensuring network attachment";
   docker network connect "${NETWORK_NAME}" "${MONGO_CONTAINER}" 2>/dev/null || true
 else
-  log "Starting fresh mongo container";
-  docker run -d --name "${MONGO_CONTAINER}" --network "${NETWORK_NAME}" -p ${MONGO_PORT_HOST}:27017 "${MONGO_IMAGE}" --bind_ip_all >/dev/null
+  log "Starting fresh mongo container with persistent volume";
+  docker run -d --name "${MONGO_CONTAINER}" --network "${NETWORK_NAME}" -p ${MONGO_PORT_HOST}:27017 \
+    -v ${MONGO_VOLUME_NAME}:/data/db \
+    "${MONGO_IMAGE}" --bind_ip_all >/dev/null
 fi
 
 # ---- Build Images ----
