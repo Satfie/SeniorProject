@@ -1,6 +1,7 @@
 import { Db, ObjectId } from "mongodb"
 import type { Bracket, BracketKind, Match, Registration, Tournament } from "@/lib/api"
 import { createNotifications } from "@/lib/notification-service"
+import { validateTournamentConfig } from "@/lib/tournament-rules"
 import { buildIdFilter, looksLikeObjectId, normalizeId, type TeamDoc } from "@/lib/team-service"
 
 const TOURNAMENTS_COLLECTION = "tournaments"
@@ -171,6 +172,19 @@ export async function createTournament(
 ): Promise<Tournament> {
   const now = nowIso()
   const rosterSize = sanitizeRosterSize(data.rosterSize) ?? DEFAULT_ROSTER_SIZE
+  const participants = typeof data.maxParticipants === "number" ? data.maxParticipants : (typeof data.currentParticipants === "number" ? data.currentParticipants : undefined)
+  const formatType = (data.type || "single-elimination").toLowerCase()
+  const { valid, reason } = validateTournamentConfig({
+    game: data.game,
+    participants,
+    teams: participants,
+    rosterSize,
+    formatType: formatType as any,
+    maxParticipants: typeof data.maxParticipants === "number" ? data.maxParticipants : undefined,
+  })
+  if (!valid) {
+    throw new Error(`Invalid tournament configuration: ${reason}`)
+  }
   const doc: TournamentDoc = {
     _id: new ObjectId(),
     title: data.title?.trim() || "Untitled Tournament",

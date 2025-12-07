@@ -36,10 +36,12 @@ export async function POST(req: NextRequest) {
       const { status, payload } = normalizeAuthServiceError(error);
       return NextResponse.json(payload, { status });
     }
-    console.error("[tournaments] POST failed", error);
+    const msg = String(error?.message || "Failed to create tournament");
+    const isValidation = msg.toLowerCase().includes("invalid tournament configuration")
+    console.error("[tournaments] POST failed", msg);
     return NextResponse.json(
-      { message: error?.message || "Failed to create tournament" },
-      { status: 500 }
+      { message: msg },
+      { status: isValidation ? 400 : 500 }
     );
   }
 }
