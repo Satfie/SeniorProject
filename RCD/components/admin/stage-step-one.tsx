@@ -6,6 +6,8 @@ export interface StageFormData {
   groups: string;
   qualifiers: string;
   formatType: string;
+  game?: string;
+  rosterSize?: number;
 }
 
 export function StageStepOne({
@@ -26,6 +28,28 @@ export function StageStepOne({
             setFormData({ ...formData, stageName: e.target.value })
           }
         />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-sm">Game</label>
+          <input
+            className="w-full border rounded px-2 py-1"
+            value={formData.game || ""}
+            onChange={(e) =>
+              setFormData({ ...formData, game: e.target.value })
+            }
+          />
+        </div>
+        <div>
+          <label className="text-sm">Roster Size</label>
+          <input
+            className="w-full border rounded px-2 py-1"
+            value={String(formData.rosterSize || "")}
+            onChange={(e) =>
+              setFormData({ ...formData, rosterSize: Number(e.target.value) || undefined })
+            }
+          />
+        </div>
       </div>
       <div>
         <label className="text-sm">Participants</label>

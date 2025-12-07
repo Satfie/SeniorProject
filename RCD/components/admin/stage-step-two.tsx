@@ -1,5 +1,6 @@
 import React from 'react'
 import type { StageFormData } from "./stage-step-one";
+import { CommonSetups } from "./common-setups";
 
 const formats = [
   { id: "single-elimination", name: "Single Elimination" },
@@ -38,6 +39,17 @@ export function StageStepTwo({
   }
   return (
     <div className="p-4 border rounded grid gap-3">
+      <CommonSetups
+        game={formData.game}
+        applyPreset={(p) =>
+          setFormData({
+            ...formData,
+            formatType: p.formatType,
+            participants: String(p.teams),
+            rosterSize: p.rosterSize,
+          })
+        }
+      />
       {formats.map((f) => (
         <button
           key={f.id}

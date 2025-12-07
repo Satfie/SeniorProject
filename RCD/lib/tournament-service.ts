@@ -461,12 +461,23 @@ export async function startTournamentBracket(
   format: BracketKind,
   teamIds: string[]
 ): Promise<Bracket> {
+  console.info("[tournament-service] startTournamentBracket invoked", { tournamentId, format, teamCount: teamIds.length })
   const existing = await fetchBracketDoc(db, tournamentId)
   if (existing) {
+    console.info("[tournament-service] bracket exists, returning existing", { tournamentId })
     return serializeBracketDoc(existing)
   }
   if (teamIds.length < 2) {
+    console.warn("[tournament-service] generation failed: not enough teams", { tournamentId, teamCount: teamIds.length })
     throw new Error("Not enough teams to start")
+  }
+  if (format === "double") {
+    const n = teamIds.length
+    const isPowerTwo = n > 0 && (n & (n - 1)) === 0
+    if (n < 4 || !isPowerTwo) {
+      console.warn("[tournament-service] generation failed: double elim requires power-of-two ≥ 4", { tournamentId, teamCount: n })
+      throw new Error("Double elimination requires power-of-two teams and at least 4")
+    }
   }
   const bracket =
     format === "double"
