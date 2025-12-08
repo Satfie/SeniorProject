@@ -1,0 +1,350 @@
+{
+  "ok": true,
+  "host": "http://localhost:8080",
+  "teams": [
+    {
+      "team": {
+        "id": "693635df198a0a47b817a809",
+        "name": "Pulse Nimbus 1",
+        "tag": "PN1"
+      },
+      "manager": {
+        "email": "pulsenimbus1.manager.1765160415702.1@example.com",
+        "username": "pulse_manager1_5tj",
+        "password": "Mgr_33yt6w_A1!",
+        "id": "693635df6275d3d98a98a8f8"
+      },
+      "players": [
+        {
+          "email": "pulsenimbus1.p1.1765160415702.1@example.com",
+          "username": "pulse_player1_fs1",
+          "password": "Plr_ykuzka_B2!",
+          "id": "693635e06275d3d98a98a8fd",
+          "requestId": "693635e0198a0a47b817a80a"
+        },
+        {
+          "email": "pulsenimbus1.p2.1765160415702.1@example.com",
+          "username": "pulse_player2_hc4",
+          "password": "Plr_smfa96_B2!",
+          "id": "693635e06275d3d98a98a902",
+          "requestId": "693635e0198a0a47b817a80c"
+        },
+        {
+          "email": "pulsenimbus1.p3.1765160415702.1@example.com",
+          "username": "pulse_player3_x2g",
+          "password": "Plr_9yhmhs_B2!",
+          "id": "693635e06275d3d98a98a907",
+          "requestId": "693635e0198a0a47b817a80e"
+        },
+        {
+          "email": "pulsenimbus1.p4.1765160415702.1@example.com",
+          "username": "pulse_player4_buz",
+          "password": "Plr_6hnhzf_B2!",
+          "id": "693635e06275d3d98a98a90c",
+          "requestId": "693635e0198a0a47b817a810"
+        }
+      ]
+    },
+    {
+      "team": {
+        "id": "693635e1198a0a47b817a816",
+        "name": "Falcon Falcon 2",
+        "tag": "FF2"
+      },
+      "manager": {
+        "email": "falconfalcon2.manager.1765160415702.2@example.com",
+        "username": "falcon_manager2_55o",
+        "password": "Mgr_necxz1_A1!",
+        "id": "693635e16275d3d98a98a915"
+      },
+      "players": [
+        {
+          "email": "falconfalcon2.p1.1765160415702.2@example.com",
+          "username": "falcon_player1_1ka",
+          "password": "Plr_tu5m0o_B2!",
+          "id": "693635e16275d3d98a98a91a",
+          "requestId": "693635e1198a0a47b817a817"
+        },
+        {
+          "email": "falconfalcon2.p2.1765160415702.2@example.com",
+          "username": "falcon_player2_8ah",
+          "password": "Plr_ifey7v_B2!",
+          "id": "693635e16275d3d98a98a91f",
+          "requestId": "693635e1198a0a47b817a819"
+        },
+        {
+          "email": "falconfalcon2.p3.1765160415702.2@example.com",
+          "username": "falcon_player3_btq",
+          "password": "Plr_vdpg4p_B2!",
+          "id": "693635e16275d3d98a98a924",
+          "requestId": "693635e1198a0a47b817a81b"
+        },
+        {
+          "email": "falconfalcon2.p4.1765160415702.2@example.com",
+          "username": "falcon_player4_2lm",
+          "password": "Plr_g39egz_B2!",
+          "id": "693635e16275d3d98a98a929",
+          "requestId": "693635e1198a0a47b817a81d"
+        }
+      ]
+    },
+    {
+      "team": {
+        "id": "693635e2198a0a47b817a823",
+        "name": "Falcon Apex 3",
+        "tag": "FA3"
+      },
+      "manager": {
+        "email": "falconapex3.manager.1765160415702.3@example.com",
+        "username": "falcon_manager3_oc2",
+        "password": "Mgr_2ca03z_A1!",
+        "id": "693635e26275d3d98a98a932"
+      },
+      "players": [
+        {
+          "email": "falconapex3.p1.1765160415702.3@example.com",
+          "username": "falcon_player1_9u5",
+          "password": "Plr_5aivkz_B2!",
+          "id": "693635e26275d3d98a98a937",
+          "requestId": "693635e2198a0a47b817a824"
+        },
+        {
+          "email": "falconapex3.p2.1765160415702.3@example.com",
+          "username": "falcon_player2_373",
+          "password": "Plr_1fmhpf_B2!",
+          "id": "693635e26275d3d98a98a93c",
+          "requestId": "693635e2198a0a47b817a826"
+        },
+        {
+          "email": "falconapex3.p3.1765160415702.3@example.com",
+          "username": "falcon_player3_s57",
+          "password": "Plr_7zfjqr_B2!",
+          "id": "693635e26275d3d98a98a941",
+          "requestId": "693635e3198a0a47b817a828"
+        },
+        {
+          "email": "falconapex3.p4.1765160415702.3@example.com",
+          "username": "falcon_player4_vw3",
+          "password": "Plr_rh5ub1_B2!",
+          "id": "693635e36275d3d98a98a946",
+          "requestId": "693635e3198a0a47b817a82a"
+        }
+      ]
+    },
+    {
+      "team": {
+        "id": "693635e4198a0a47b817a830",
+        "name": "Titan Nimbus 4",
+        "tag": "TN4"
+      },
+      "manager": {
+        "email": "titannimbus4.manager.1765160415702.4@example.com",
+        "username": "titan_manager4_vai",
+        "password": "Mgr_fe0ofx_A1!",
+        "id": "693635e36275d3d98a98a94f"
+      },
+      "players": [
+        {
+          "email": "titannimbus4.p1.1765160415702.4@example.com",
+          "username": "titan_player1_0bg",
+          "password": "Plr_j3vsoh_B2!",
+          "id": "693635e46275d3d98a98a954",
+          "requestId": "693635e4198a0a47b817a831"
+        },
+        {
+          "email": "titannimbus4.p2.1765160415702.4@example.com",
+          "username": "titan_player2_5px",
+          "password": "Plr_vjibgt_B2!",
+          "id": "693635e46275d3d98a98a959",
+          "requestId": "693635e4198a0a47b817a833"
+        },
+        {
+          "email": "titannimbus4.p3.1765160415702.4@example.com",
+          "username": "titan_player3_1c7",
+          "password": "Plr_tnuq5o_B2!",
+          "id": "693635e46275d3d98a98a95e",
+          "requestId": "693635e4198a0a47b817a835"
+        },
+        {
+          "email": "titannimbus4.p4.1765160415702.4@example.com",
+          "username": "titan_player4_9ky",
+          "password": "Plr_6w0tve_B2!",
+          "id": "693635e46275d3d98a98a963",
+          "requestId": "693635e4198a0a47b817a837"
+        }
+      ]
+    },
+    {
+      "team": {
+        "id": "693635e5198a0a47b817a83d",
+        "name": "Atlas Quantum 5",
+        "tag": "AQ5"
+      },
+      "manager": {
+        "email": "atlasquantum5.manager.1765160415702.5@example.com",
+        "username": "atlas_manager5_h1j",
+        "password": "Mgr_30aiin_A1!",
+        "id": "693635e56275d3d98a98a96c"
+      },
+      "players": [
+        {
+          "email": "atlasquantum5.p1.1765160415702.5@example.com",
+          "username": "atlas_player1_akq",
+          "password": "Plr_416no8_B2!",
+          "id": "693635e56275d3d98a98a971",
+          "requestId": "693635e5198a0a47b817a83e"
+        },
+        {
+          "email": "atlasquantum5.p2.1765160415702.5@example.com",
+          "username": "atlas_player2_4vq",
+          "password": "Plr_lha5np_B2!",
+          "id": "693635e56275d3d98a98a976",
+          "requestId": "693635e5198a0a47b817a840"
+        },
+        {
+          "email": "atlasquantum5.p3.1765160415702.5@example.com",
+          "username": "atlas_player3_nn6",
+          "password": "Plr_ag11jq_B2!",
+          "id": "693635e56275d3d98a98a97b",
+          "requestId": "693635e5198a0a47b817a842"
+        },
+        {
+          "email": "atlasquantum5.p4.1765160415702.5@example.com",
+          "username": "atlas_player4_gjv",
+          "password": "Plr_9znyml_B2!",
+          "id": "693635e56275d3d98a98a980",
+          "requestId": "693635e5198a0a47b817a844"
+        }
+      ]
+    },
+    {
+      "team": {
+        "id": "693635e6198a0a47b817a84a",
+        "name": "Aurora Aurora 6",
+        "tag": "AA6"
+      },
+      "manager": {
+        "email": "auroraaurora6.manager.1765160415702.6@example.com",
+        "username": "aurora_manager6_vvi",
+        "password": "Mgr_m2gk7d_A1!",
+        "id": "693635e66275d3d98a98a989"
+      },
+      "players": [
+        {
+          "email": "auroraaurora6.p1.1765160415702.6@example.com",
+          "username": "aurora_player1_d3n",
+          "password": "Plr_kx8jc9_B2!",
+          "id": "693635e66275d3d98a98a98e",
+          "requestId": "693635e6198a0a47b817a84b"
+        },
+        {
+          "email": "auroraaurora6.p2.1765160415702.6@example.com",
+          "username": "aurora_player2_qrp",
+          "password": "Plr_p6wtz8_B2!",
+          "id": "693635e66275d3d98a98a993",
+          "requestId": "693635e6198a0a47b817a84d"
+        },
+        {
+          "email": "auroraaurora6.p3.1765160415702.6@example.com",
+          "username": "aurora_player3_wft",
+          "password": "Plr_57f71q_B2!",
+          "id": "693635e66275d3d98a98a998",
+          "requestId": "693635e6198a0a47b817a84f"
+        },
+        {
+          "email": "auroraaurora6.p4.1765160415702.6@example.com",
+          "username": "aurora_player4_ffi",
+          "password": "Plr_nxf5qn_B2!",
+          "id": "693635e66275d3d98a98a99d",
+          "requestId": "693635e6198a0a47b817a851"
+        }
+      ]
+    },
+    {
+      "team": {
+        "id": "693635e7198a0a47b817a857",
+        "name": "Aurora Helix 7",
+        "tag": "AH7"
+      },
+      "manager": {
+        "email": "aurorahelix7.manager.1765160415702.7@example.com",
+        "username": "aurora_manager7_orn",
+        "password": "Mgr_7o0rj7_A1!",
+        "id": "693635e76275d3d98a98a9a6"
+      },
+      "players": [
+        {
+          "email": "aurorahelix7.p1.1765160415702.7@example.com",
+          "username": "aurora_player1_rwz",
+          "password": "Plr_83w60y_B2!",
+          "id": "693635e76275d3d98a98a9ab",
+          "requestId": "693635e7198a0a47b817a858"
+        },
+        {
+          "email": "aurorahelix7.p2.1765160415702.7@example.com",
+          "username": "aurora_player2_8ft",
+          "password": "Plr_x56pwf_B2!",
+          "id": "693635e76275d3d98a98a9b0",
+          "requestId": "693635e7198a0a47b817a85a"
+        },
+        {
+          "email": "aurorahelix7.p3.1765160415702.7@example.com",
+          "username": "aurora_player3_79w",
+          "password": "Plr_pztu03_B2!",
+          "id": "693635e76275d3d98a98a9b5",
+          "requestId": "693635e7198a0a47b817a85c"
+        },
+        {
+          "email": "aurorahelix7.p4.1765160415702.7@example.com",
+          "username": "aurora_player4_7as",
+          "password": "Plr_a0qn9h_B2!",
+          "id": "693635e76275d3d98a98a9ba",
+          "requestId": "693635e8198a0a47b817a85e"
+        }
+      ]
+    },
+    {
+      "team": {
+        "id": "693635e8198a0a47b817a864",
+        "name": "Phoenix Pulse 8",
+        "tag": "PP8"
+      },
+      "manager": {
+        "email": "phoenixpulse8.manager.1765160415702.8@example.com",
+        "username": "phoenix_manager8_70v",
+        "password": "Mgr_4b8y84_A1!",
+        "id": "693635e86275d3d98a98a9c3"
+      },
+      "players": [
+        {
+          "email": "phoenixpulse8.p1.1765160415702.8@example.com",
+          "username": "phoenix_player1_spo",
+          "password": "Plr_ifnsyf_B2!",
+          "id": "693635e86275d3d98a98a9c8",
+          "requestId": "693635e8198a0a47b817a865"
+        },
+        {
+          "email": "phoenixpulse8.p2.1765160415702.8@example.com",
+          "username": "phoenix_player2_h3e",
+          "password": "Plr_7mrel3_B2!",
+          "id": "693635e86275d3d98a98a9cd",
+          "requestId": "693635e8198a0a47b817a867"
+        },
+        {
+          "email": "phoenixpulse8.p3.1765160415702.8@example.com",
+          "username": "phoenix_player3_8cx",
+          "password": "Plr_hmd2cr_B2!",
+          "id": "693635e86275d3d98a98a9d2",
+          "requestId": "693635e9198a0a47b817a869"
+        },
+        {
+          "email": "phoenixpulse8.p4.1765160415702.8@example.com",
+          "username": "phoenix_player4_hml",
+          "password": "Plr_770zv9_B2!",
+          "id": "693635e96275d3d98a98a9d7",
+          "requestId": "693635e9198a0a47b817a86b"
+        }
+      ]
+    }
+  ]
+}

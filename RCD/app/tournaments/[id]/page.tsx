@@ -258,7 +258,10 @@ export default function TournamentDetailPage() {
     }
   };
 
-  const canEndTournament = (() => {
+  // Determines whether payouts can be processed: either the tournament is marked as completed,
+  // or the final match is completed (for bracket-based tournaments).
+  const canProcessPayout = (() => {
+    if (tournament?.status === "completed") return true;
     if (!bracket) return false;
     if (bracket.kind === "single") {
       const rounds = bracket.rounds.winners;
@@ -270,6 +273,42 @@ export default function TournamentDetailPage() {
       return !!gm && gm.status === "completed";
     }
   })();
+
+  const [completing, setCompleting] = useState(false);
+  const handleMarkCompleted = async () => {
+    if (!id) return;
+    setCompleting(true);
+    try {
+      const updated = await api.updateTournament(id, { status: "completed" });
+      setTournament(updated);
+      toast.success("Tournament marked as completed");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to mark completed");
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  // Inline Admin Settings (status management)
+  const [pendingStatus, setPendingStatus] = useState<Tournament["status"]>(() => tournament?.status ?? undefined);
+  useEffect(() => {
+    if (tournament?.status) setPendingStatus(tournament.status);
+  }, [tournament?.status]);
+
+  const [savingStatus, setSavingStatus] = useState(false);
+  const saveStatus = async () => {
+    if (!id) return;
+    setSavingStatus(true);
+    try {
+      const updated = await api.updateTournament(id, { status: pendingStatus });
+      setTournament(updated);
+      toast.success(`Status updated to ${updated.status}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to update status");
+    } finally {
+      setSavingStatus(false);
+    }
+  };
 
   const handleEnd = async () => {
     if (!id) return;
@@ -579,6 +618,45 @@ export default function TournamentDetailPage() {
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div className="space-y-4">
+                        <h3 className="font-medium">Tournament Settings</h3>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-2">
+                            <span className="text-sm text-muted-foreground">Status</span>
+                            <div className="flex gap-2">
+                              <Button
+                                variant={pendingStatus === "upcoming" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setPendingStatus("upcoming")}
+                                className="flex-1"
+                              >
+                                Upcoming
+                              </Button>
+                              <Button
+                                variant={pendingStatus === "ongoing" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setPendingStatus("ongoing")}
+                                className="flex-1"
+                              >
+                                Ongoing
+                              </Button>
+                              <Button
+                                variant={pendingStatus === "completed" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setPendingStatus("completed")}
+                                className="flex-1"
+                              >
+                                Completed
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="flex items-end">
+                            <Button onClick={saveStatus} disabled={savingStatus} className="w-full">
+                              {savingStatus ? "Saving..." : "Update Status"}
+                            </Button>
+                          </div>
+                        </div>
+
+                        <Separator className="bg-destructive/10" />
                         <h3 className="font-medium">Bracket Configuration</h3>
                         <div className="flex gap-4">
                           <Button
@@ -609,6 +687,14 @@ export default function TournamentDetailPage() {
                             className="w-full"
                           >
                             {starting ? "Starting..." : "Start Tournament & Generate Bracket"}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={handleMarkCompleted}
+                            disabled={completing || tournament.status === "completed"}
+                            className="w-full"
+                          >
+                            {completing ? "Updating..." : tournament.status === "completed" ? "Tournament Completed" : "Mark Tournament Completed"}
                           </Button>
                           
                           <Button
