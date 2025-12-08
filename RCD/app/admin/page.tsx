@@ -21,7 +21,6 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Shield, Users, Trophy, Trash2, Edit, Plus, Search, Activity, AlertTriangle, FileText } from "lucide-react"
 import { CommonSetups } from "@/components/admin/common-setups"
-import { PreviewRoundOne } from "@/components/admin/preview-round-one"
 import { validateTournamentConfig } from "@/lib/tournament-rules"
 import { toast } from "sonner"
 import { useSearchParams } from "next/navigation"
@@ -61,7 +60,6 @@ function AdminContent() {
     game: "",
     rosterSize: "5",
   });
-  const [previewOpen, setPreviewOpen] = useState(false)
 
   useEffect(() => {
     fetchData();
@@ -799,7 +797,7 @@ function AdminContent() {
                   className="bg-background/50"
                 />
               </div>
-              {/* Common Setups and Preview */}
+              {/* Common Setups */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <CommonSetups
@@ -813,11 +811,6 @@ function AdminContent() {
                       })
                     }
                   />
-                </div>
-                <div className="space-y-2 flex items-end">
-                  <Button variant="outline" onClick={() => setPreviewOpen(true)}>
-                    Preview Round 1
-                  </Button>
                 </div>
               </div>
               <div className="grid md:grid-cols-2 gap-4">
@@ -950,11 +943,6 @@ function AdminContent() {
                   className="bg-background/50"
                 />
               </div>
-              <PreviewRoundOne
-                open={previewOpen}
-                onClose={() => setPreviewOpen(false)}
-                participants={Number(tournamentForm.maxParticipants || 0) || 0}
-              />
             </div>
             <DialogFooter>
               <Button
