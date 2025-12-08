@@ -72,3 +72,31 @@ export async function PATCH(
     return NextResponse.json({ message: e?.message || "Server error" }, { status: code });
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+  if (!id) return NextResponse.json({ message: "id required" }, { status: 400 });
+  try {
+    const { user } = await requireAuthUser(req);
+    const db = await getDb();
+    const team = await findTeamById(db, id);
+    if (!team) return NextResponse.json({ message: "Not found" }, { status: 404 });
+    if (String(team.managerId) !== user.id) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    const teamId = normalizeId(team._id);
+    await db.collection<TeamDoc>("teams").deleteOne(buildIdFilter(teamId));
+    await db.collection("users").updateMany({ teamId }, { $unset: { teamId: "" } });
+    await db.collection("teamJoinRequests").deleteMany({ teamId });
+    return NextResponse.json({ success: true });
+  } catch (e: any) {
+    if (e instanceof AuthServiceError) {
+      const { status, payload } = normalizeAuthServiceError(e);
+      return NextResponse.json(payload, { status });
+    }
+    return NextResponse.json({ message: e?.message || "Server error" }, { status: 500 });
+  }
+}
