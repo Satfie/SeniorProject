@@ -7,12 +7,8 @@ function isDockerOnlyHostname(host: string) {
   return h && !h.includes(".") && h !== "localhost" && h !== "127.0.0.1";
 }
 
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ provider: string }> }
-) {
-  const { provider } = await context.params;
-  const normalized = (provider || "").toLowerCase();
+async function redirectToProvider(req: NextRequest, providerParam: string) {
+  const normalized = (providerParam || "").toLowerCase();
   if (!SUPPORTED_PROVIDERS.has(normalized)) {
     return NextResponse.json({ message: "Unsupported provider" }, { status: 404 });
   }
@@ -39,5 +35,36 @@ export async function GET(
   });
 
   return NextResponse.redirect(target.toString());
+}
+
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ provider: string }> }
+) {
+  const { provider } = await context.params;
+  return redirectToProvider(req, provider);
+}
+
+// Although OAuth 2.0 authorization endpoints are typically accessed via GET requests,
+// some clients (e.g., certain mobile SDKs, legacy integrations, or tools that do not support GET redirects)
+// may initiate the OAuth flow using POST. This handler allows POST requests to behave like GET for compatibility.
+export async function POST(
+  req: NextRequest,
+  context: { params: Promise<{ provider: string }> }
+) {
+  const { provider } = await context.params;
+  return redirectToProvider(req, provider);
+}
+
+// Allow preflight without error.
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type,Authorization",
+    },
+  });
 }
 
