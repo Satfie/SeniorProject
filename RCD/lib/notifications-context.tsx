@@ -146,6 +146,9 @@ export function NotificationsProvider({
 }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
+  const inFlightRef = React.useRef<AbortController | null>(null);
+  const pollTimerRef = React.useRef<number | null>(null);
+  const streamRef = React.useRef<EventSource | null>(null);
   const apiBase = resolveClientApiBase();
   const useDirectBase = useMemo(
     () => Boolean(apiBase && FORCE_DIRECT_API),
@@ -188,11 +191,22 @@ export function NotificationsProvider({
       ]);
     }, []);
   const load = useCallback(async () => {
+    // Prevent overlapping fetches
+    if (inFlightRef.current) {
+      inFlightRef.current.abort();
+      inFlightRef.current = null;
+    }
+    const controller = new AbortController();
+    inFlightRef.current = controller;
     setLoading(true);
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("rcd_token") : null;
       if (!token) return;
-      const res = await fetch(buildUrl(`/api/notifications`), { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(buildUrl(`/api/notifications`), {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
+        cache: "no-store",
+      });
       if (!res.ok) {
         if (res.status >= 500) {
           const err = await res.json().catch(() => ({}));
@@ -226,6 +240,7 @@ export function NotificationsProvider({
       });
     } catch {
     } finally {
+      if (inFlightRef.current === controller) inFlightRef.current = null;
       setLoading(false);
     }
   }, [buildUrl]);
@@ -246,71 +261,66 @@ export function NotificationsProvider({
     if (typeof window === "undefined") return;
     const token = localStorage.getItem("rcd_token");
     if (!token) return; // defer until token exists
+    // Initial load
     void load();
-    let cleanup: (() => void) | undefined;
-    if (token && typeof EventSource !== "undefined") {
-      let stopped = false;
-      let source: EventSource | null = null;
-      let retryMs = 2000;
-      const connect = () => {
-        if (stopped) return;
-        const streamUrl = buildUrl(`/api/notifications/stream?token=${encodeURIComponent(token)}`);
-        source = new EventSource(streamUrl);
-        const onNotification = (event: MessageEvent) => {
-          try {
-            const payload = JSON.parse(event.data) as any;
-            const mapped = normalizeNotificationPayload(payload);
-            setNotifications((prev) => [mapped, ...prev.filter((n) => n.id !== mapped.id)]);
-          } catch (err) {
-            console.error("Failed to parse notification payload", err);
-          }
-        };
-        // Some servers send named events; also handle default message
-        source.addEventListener("notification", onNotification as any);
-        source.onmessage = onNotification;
-        source.onopen = () => {
-          retryMs = 2000;
-        };
-        source.onerror = () => {
-          try {
-            if (source) source.close();
-          } catch {}
-          if (stopped) return;
-          setTimeout(connect, retryMs);
-          retryMs = Math.min(retryMs * 2, 15000);
-        };
-      };
-      connect();
-      const fallback = setInterval(() => {
-        void load();
-      }, 5 * 60_000);
-      cleanup = () => {
-        stopped = true;
-        try {
-          if (source) source.close();
-        } catch {}
-        clearInterval(fallback);
-      };
-      return cleanup;
-    } else {
-      const interval = setInterval(() => {
-        const currentToken = localStorage.getItem("rcd_token");
-        if (!currentToken) return; // skip while logged out
-        void load();
-      }, 15000);
-      cleanup = () => clearInterval(interval);
-      return cleanup;
-    }
-  }, [buildUrl, load]);
 
-  // Secondary effect: when token appears after login, trigger initial load
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const token = localStorage.getItem("rcd_token");
-    if (token && notifications.length === 0 && !loading) {
+    // Prefer SSE; maintain a single connection
+    let stopped = false;
+    let retryMs = 2000;
+    const connectSSE = () => {
+      if (stopped || typeof EventSource === "undefined") return;
+      // Close any existing stream before opening a new one
+      try { streamRef.current?.close(); } catch (err) { console.error("Error closing previous EventSource stream", err); }
+      const streamUrl = buildUrl(`/api/notifications/stream?token=${encodeURIComponent(token)}`);
+      const source = new EventSource(streamUrl);
+      streamRef.current = source;
+      const onNotification = (event: MessageEvent) => {
+        try {
+          const payload = JSON.parse(event.data) as any;
+          const mapped = normalizeNotificationPayload(payload);
+          setNotifications((prev) => [mapped, ...prev.filter((n) => n.id !== mapped.id)]);
+        } catch (err) {
+          console.error("Failed to parse notification payload", err);
+        }
+      };
+      source.addEventListener("notification", onNotification as any);
+      source.onmessage = onNotification;
+      source.onopen = () => { retryMs = 2000; };
+      source.onerror = () => {
+        try { source.close(); } catch {
+          // EventSource may already be closed; safe to ignore
+        }
+        if (stopped) return;
+        setTimeout(connectSSE, retryMs);
+        retryMs = Math.min(retryMs * 2, 15000);
+      };
+    };
+    connectSSE();
+
+    // Fallback polling every 60s, only one timer
+
+    pollTimerRef.current = window.setInterval(() => {
+      // Pause polling when tab hidden to reduce noise
+      if (typeof document !== "undefined" && document.hidden) return;
+      const currentToken = localStorage.getItem("rcd_token");
+      if (!currentToken) return;
       void load();
-    }
-  }, [notifications.length, loading, load]);
+    }, 60_000);
+
+    return () => {
+      stopped = true;
+      // Cleanup stream and polling
+      try { streamRef.current?.close(); } catch {}
+      streamRef.current = null;
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+      // Abort any in-flight fetch
+      try { inFlightRef.current?.abort(); } catch {}
+      inFlightRef.current = null;
+    };
+  }, [buildUrl, load]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const value = useMemo(
