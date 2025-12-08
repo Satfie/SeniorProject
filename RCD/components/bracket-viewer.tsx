@@ -205,13 +205,12 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
           {reportingMatch && (
             <div className="space-y-4">
               <div className="text-sm">
-                {reportingMatch.team1Id || "TBD"} vs{" "}
-                {reportingMatch.team2Id || "TBD"}
+                {nameFor(reportingMatch.team1Id)} vs {nameFor(reportingMatch.team2Id)}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs mb-1 block">
-                    Score {reportingMatch.team1Id || "T1"}
+                    Score {nameFor(reportingMatch.team1Id)}
                   </label>
                   <Input
                     type="number"
@@ -222,7 +221,7 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
                 </div>
                 <div>
                   <label className="text-xs mb-1 block">
-                    Score {reportingMatch.team2Id || "T2"}
+                    Score {nameFor(reportingMatch.team2Id)}
                   </label>
                   <Input
                     type="number"
@@ -255,12 +254,12 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
           {editingMatch && (
             <div className="space-y-4">
               <div className="text-sm">
-                {editingMatch.team1Id || "TBD"} vs {editingMatch.team2Id || "TBD"}
+                {nameFor(editingMatch.team1Id)} vs {nameFor(editingMatch.team2Id)}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs mb-1 block">
-                    Score {editingMatch.team1Id || "T1"}
+                    Score {nameFor(editingMatch.team1Id)}
                   </label>
                   <Input
                     type="number"
@@ -271,7 +270,7 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
                 </div>
                 <div>
                   <label className="text-xs mb-1 block">
-                    Score {editingMatch.team2Id || "T2"}
+                    Score {nameFor(editingMatch.team2Id)}
                   </label>
                   <Input
                     type="number"
@@ -319,7 +318,7 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
           {overrideMatch && (
             <div className="space-y-4">
               <div className="text-sm">
-                {overrideMatch.team1Id || "TBD"} vs {overrideMatch.team2Id || "TBD"}
+                {nameFor(overrideMatch.team1Id)} vs {nameFor(overrideMatch.team2Id)}
               </div>
               <div>
                 <label className="text-xs mb-1 block">New Winner</label>
@@ -339,11 +338,11 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs mb-1 block">Score {overrideMatch.team1Id || "T1"}</label>
+                  <label className="text-xs mb-1 block">Score {nameFor(overrideMatch.team1Id)}</label>
                   <Input type="number" min={0} defaultValue={typeof overrideMatch.score1 === "number" ? overrideMatch.score1 : 0} ref={editScore1Ref} />
                 </div>
                 <div>
-                  <label className="text-xs mb-1 block">Score {overrideMatch.team2Id || "T2"}</label>
+                  <label className="text-xs mb-1 block">Score {nameFor(overrideMatch.team2Id)}</label>
                   <Input type="number" min={0} defaultValue={typeof overrideMatch.score2 === "number" ? overrideMatch.score2 : 0} ref={editScore2Ref} />
                 </div>
               </div>

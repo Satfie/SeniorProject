@@ -578,29 +578,45 @@ export default function TournamentDetailPage() {
                             <p>No teams registered yet.</p>
                           </div>
                         )}
-                        {!participantsLoading && participants.map(p => (
-                          <div key={p.teamId} className="p-4 rounded-xl bg-background/50 border border-white/5 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-primary-foreground font-bold">
-                                {p.name.slice(0,2).toUpperCase()}
+                        {!participantsLoading && participants.map(p => {
+                          const isIdLike = (s?: string | null) => {
+                            if (!s) return false;
+                            const trimmed = s.trim();
+                            // Heuristic: long hex/uuid-like or mostly digits
+                            const isLong = trimmed.length >= 16;
+                            const hexish = /^[a-f0-9]+$/i.test(trimmed);
+                            const mostlyDigits = /\d{6,}/.test(trimmed);
+                            return isLong && (hexish || mostlyDigits);
+                          };
+                          const primaryName = !isIdLike(p.name) ? p.name : undefined;
+                          const fallbackName = teamNames[p.teamId];
+                          const playerLabel = (p.players?.[0]?.username) || (p.players?.[0]?.email);
+                          const displayName = primaryName || fallbackName || playerLabel || "Team";
+                          const initialsSource = displayName.replace(/[^A-Za-z]/g, "");
+                          const initials = (initialsSource.slice(0,2) || "TM").toUpperCase();
+                          return (
+                            <div key={p.teamId} className="p-4 rounded-xl bg-background/50 border border-white/5 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-primary-foreground font-bold">
+                                  {initials}
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{displayName}</span>
+                                  {p.players && p.players.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-1">
+                                      {p.players.map((player) => (
+                                        <Badge key={player.id} variant="outline" className="text-[10px] h-4 px-1.5">
+                                          {player.username || player.email || "Player"}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex flex-col">
-                                <span className="font-medium">{p.name}</span>
-                                <span className="text-xs text-muted-foreground">{p.teamId}</span>
-                                {p.players && p.players.length > 0 && (
-                                  <div className="mt-2 flex flex-wrap gap-1">
-                                    {p.players.map((player) => (
-                                      <Badge key={player.id} variant="outline" className="text-[10px] h-4 px-1.5">
-                                        {player.username || player.email || player.id}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
+                              <Badge variant="outline" className="text-xs">Registered</Badge>
                             </div>
-                            <Badge variant="outline" className="text-xs">Registered</Badge>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </CardContent>
                   </Card>
@@ -700,7 +716,7 @@ export default function TournamentDetailPage() {
                           <Button
                             variant="destructive"
                             onClick={handleEnd}
-                            disabled={!canEndTournament || ending || !!tournament.payout}
+                            disabled={!canProcessPayout || ending || !!tournament.payout}
                             className="w-full"
                           >
                             {ending ? "Ending..." : tournament.payout ? "Payout Distributed" : "End Tournament & Distribute Prizes"}
