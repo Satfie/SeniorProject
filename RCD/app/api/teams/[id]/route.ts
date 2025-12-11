@@ -84,7 +84,9 @@ export async function DELETE(
     const db = await getDb();
     const team = await findTeamById(db, id);
     if (!team) return NextResponse.json({ message: "Not found" }, { status: 404 });
-    if (String(team.managerId) !== user.id) {
+    const isManager = String(team.managerId) === user.id;
+    const isAdmin = user.role === "admin";
+    if (!isManager && !isAdmin) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
     const teamId = normalizeId(team._id);
