@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { Grid3x3, Calendar, Shield, Users, Trophy, Gamepad2, LogOut } from "lucide-react"
 import { cn } from "../../../lib/utils"
 import { useAuth } from "../../../lib/auth-context"
+import { Logo } from "../logo"
 
 const base = "/internal/admin"
 const navItems = [
@@ -30,11 +31,11 @@ export function AdminSidebar() {
     <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
       <div className="p-6 border-b border-sidebar-border">
         <Link href={`${base}/dashboard`} className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold">E</span>
+          <div className="w-10 h-10 flex items-center justify-center">
+            <Logo size={40} />
           </div>
           <div>
-            <h1 className="font-bold text-sidebar-foreground">Esports</h1>
+            <h1 className="font-bold text-sidebar-foreground">Esport Shield</h1>
             <p className="text-xs text-muted-foreground">Admin</p>
           </div>
         </Link>

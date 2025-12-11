@@ -16,6 +16,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { Logo } from "@/components/logo";
 import { useTheme } from "next-themes";
 
 import { Button } from "@/components/ui/button"
@@ -168,8 +169,8 @@ export function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-purple-600 shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-all group-hover:scale-110">
-              <Trophy className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-all group-hover:scale-110">
+              <Logo size={36} />
             </div>
             <span className="bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-xl font-bold text-transparent group-hover:opacity-80 transition-opacity">
               Esport Shield

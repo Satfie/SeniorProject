@@ -214,8 +214,8 @@ export default function RegisterPage() {
                           disabled={!providerStatus.discord}
                           onClick={() => beginOAuth("discord", "login")}
                         >
-                          <span className="mr-2 inline-block size-4 md:size-5 [filter:drop-shadow(0_0_6px_rgba(88,101,242,0.35))]">
-                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                          <span className="inline-flex items-center justify-center w-5 h-5 mr-2 flex-shrink-0 [filter:drop-shadow(0_0_6px_rgba(88,101,242,0.35))]">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-full h-full">
                               <path fill="#5865F2" d="M20.317 4.369A19.791 19.791 0 0 0 16.672 3c-.2.356-.43.822-.589 1.194a18.027 18.027 0 0 0-4.165 0A12.3 12.3 0 0 0 11.32 3c-1.973.34-3.645.963-4.961 1.769C3.758 7.164 3 10.077 3 12.926c0 .12.003.239.01.357 1.738 1.268 3.804 2.245 6.034 2.738.464-.638.879-1.312 1.238-2.016a11.87 11.87 0 0 1-1.78-.68c.15-.11.297-.226.437-.347 3.457 1.62 7.202 1.62 10.658 0 .142.121.29.236.44.347-.569.245-1.162.463-1.777.68.359.704.773 1.378 1.238 2.016 2.233-.493 4.298-1.474 6.036-2.743.01-.118.014-.235.014-.353 0-2.858-.759-5.77-2.683-8.557ZM9.276 13.995c-.848 0-1.54-.77-1.54-1.713 0-.943.684-1.713 1.54-1.713.854 0 1.546.77 1.54 1.713 0 .943-.686 1.713-1.54 1.713Zm5.448 0c-.848 0-1.54-.77-1.54-1.713 0-.943.684-1.713 1.54-1.713.854 0 1.546.77 1.54 1.713 0 .943-.686 1.713-1.54 1.713Z"/>
                             </svg>
                           </span>
@@ -236,8 +236,8 @@ export default function RegisterPage() {
                           disabled={!providerStatus.google}
                           onClick={() => beginOAuth("google", "login")}
                         >
-                          <span className="mr-2 inline-block size-4 md:size-5 [filter:drop-shadow(0_0_6px_rgba(234,67,53,0.35))]">
-                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                          <span className="inline-flex items-center justify-center w-5 h-5 mr-2 flex-shrink-0 [filter:drop-shadow(0_0_6px_rgba(234,67,53,0.35))]">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="w-full h-full">
                               <path fill="#EA4335" d="M12 10.2v3.6h5.1c-.2 1.3-1.5 3.8-5.1 3.8-3.1 0-5.6-2.6-5.6-5.8S8.9 6 12 6c1.8 0 3 .8 3.7 1.5l2.5-2.4C16.9 3.8 14.6 3 12 3 7 3 3 7 3 12s4 9 9 9c5.2 0 8.6-3.7 8.6-8.9 0-.6-.1-1.2-.2-1.7H12Z"/>
                             </svg>
                           </span>

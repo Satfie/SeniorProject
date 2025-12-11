@@ -1,0 +1,102 @@
+import React from "react";
+
+interface LogoProps {
+  size?: number;
+  className?: string;
+}
+
+export function Logo({ size = 36, className = "" }: LogoProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 64 64"
+      fill="none"
+      width={size}
+      height={size}
+      className={className}
+    >
+      <defs>
+        <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#8B5CF6" />
+          <stop offset="100%" stopColor="#A855F7" />
+        </linearGradient>
+        <linearGradient id="innerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#1a1625" />
+          <stop offset="100%" stopColor="#2d2640" />
+        </linearGradient>
+        <linearGradient id="swordGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#C084FC" />
+          <stop offset="100%" stopColor="#8B5CF6" />
+        </linearGradient>
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Shield outer shape */}
+      <path
+        d="M32 4L8 12V28C8 44 18 54 32 60C46 54 56 44 56 28V12L32 4Z"
+        fill="url(#shieldGradient)"
+        filter="url(#glow)"
+      />
+
+      {/* Shield inner dark area */}
+      <path
+        d="M32 8L12 15V28C12 42 20 50 32 55C44 50 52 42 52 28V15L32 8Z"
+        fill="url(#innerGradient)"
+      />
+
+      {/* Crossed swords - Left */}
+      <path
+        d="M22 44L38 20M22 44L20 42L36 18M22 44L24 46L40 22M38 20L40 22L36 18"
+        stroke="url(#swordGradient)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        filter="url(#glow)"
+      />
+
+      {/* Crossed swords - Right */}
+      <path
+        d="M42 44L26 20M42 44L44 42L28 18M42 44L40 46L24 22M26 20L24 22L28 18"
+        stroke="url(#swordGradient)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        filter="url(#glow)"
+      />
+
+      {/* Center diamond/gem */}
+      <path
+        d="M32 28L36 32L32 40L28 32Z"
+        fill="url(#swordGradient)"
+        filter="url(#glow)"
+      />
+
+      {/* Shield edge highlight */}
+      <path
+        d="M32 4L8 12V28C8 44 18 54 32 60"
+        stroke="#C084FC"
+        strokeWidth="0.5"
+        strokeOpacity="0.6"
+        fill="none"
+      />
+
+      {/* Circuit pattern details */}
+      <g stroke="#8B5CF6" strokeWidth="0.5" strokeOpacity="0.3">
+        <path d="M16 20H22L26 24" />
+        <path d="M48 20H42L38 24" />
+        <path d="M16 36H20" />
+        <path d="M48 36H44" />
+        <circle cx="16" cy="20" r="1" fill="#8B5CF6" fillOpacity="0.5" />
+        <circle cx="48" cy="20" r="1" fill="#8B5CF6" fillOpacity="0.5" />
+      </g>
+    </svg>
+  );
+}
+
+export default Logo;

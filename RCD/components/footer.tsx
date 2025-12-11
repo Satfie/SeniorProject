@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { Trophy, Github, Twitter, Linkedin, Instagram } from "lucide-react"
+import { Github, Twitter, Linkedin, Instagram } from "lucide-react"
+import { Logo } from "@/components/logo"
 
 export function Footer() {
   return (
@@ -11,8 +12,8 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-6">
             <div className="flex items-center gap-2 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-all group-hover:scale-110">
-                <Trophy className="w-6 h-6 text-primary-foreground" />
+              <div className="w-10 h-10 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-all group-hover:scale-110">
+                <Logo size={40} />
               </div>
               <span className="font-bold text-xl bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">Esport Shield</span>
             </div>
