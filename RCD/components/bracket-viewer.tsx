@@ -14,6 +14,122 @@ interface BracketViewerProps {
   isAdmin?: boolean;
 }
 
+// Match card component
+function MatchCard({
+  match,
+  nameFor,
+  isAdmin,
+  onReport,
+  onEdit,
+  onOverride,
+  onReset,
+}: {
+  match: Match;
+  nameFor: (id?: string | null) => string;
+  isAdmin?: boolean;
+  onReport: (m: Match) => void;
+  onEdit: (m: Match) => void;
+  onOverride: (m: Match) => void;
+  onReset: (m: Match) => void;
+}) {
+  const isCompleted = match.status === "completed";
+  const team1IsWinner = match.winnerId && match.winnerId === match.team1Id;
+  const team2IsWinner = match.winnerId && match.winnerId === match.team2Id;
+
+  return (
+    <div
+      className={`
+        w-[200px] border rounded-lg overflow-hidden bg-card/80 backdrop-blur-sm
+        ${isCompleted ? "border-primary/30" : "border-border/50"}
+        shadow-lg shadow-black/20
+      `}
+    >
+      {/* Match header */}
+      <div className="flex items-center justify-between px-3 py-1.5 bg-muted/30 border-b border-border/30">
+        <span className="text-[10px] text-muted-foreground font-medium">
+          Match {match.index + 1}
+        </span>
+        <Badge
+          variant={isCompleted ? "default" : "outline"}
+          className={`text-[10px] px-1.5 py-0 h-4 ${isCompleted ? "bg-primary/80" : ""}`}
+        >
+          {isCompleted ? "Completed" : "Pending"}
+        </Badge>
+      </div>
+
+      {/* Team 1 */}
+      <div
+        className={`
+          flex items-center justify-between px-3 py-2 border-b border-border/20
+          ${team1IsWinner ? "bg-primary/10" : ""}
+          ${!match.team1Id ? "opacity-50" : ""}
+        `}
+      >
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {team1IsWinner && (
+            <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+          )}
+          <span className={`text-sm truncate ${team1IsWinner ? "font-semibold text-primary" : ""}`}>
+            {nameFor(match.team1Id)}
+          </span>
+        </div>
+        <span className={`text-sm font-mono ml-2 ${team1IsWinner ? "font-bold text-primary" : "text-muted-foreground"}`}>
+          {typeof match.score1 === "number" ? match.score1 : "-"}
+        </span>
+      </div>
+
+      {/* Team 2 */}
+      <div
+        className={`
+          flex items-center justify-between px-3 py-2
+          ${team2IsWinner ? "bg-primary/10" : ""}
+          ${!match.team2Id ? "opacity-50" : ""}
+        `}
+      >
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {team2IsWinner && (
+            <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+          )}
+          <span className={`text-sm truncate ${team2IsWinner ? "font-semibold text-primary" : ""}`}>
+            {nameFor(match.team2Id)}
+          </span>
+        </div>
+        <span className={`text-sm font-mono ml-2 ${team2IsWinner ? "font-bold text-primary" : "text-muted-foreground"}`}>
+          {typeof match.score2 === "number" ? match.score2 : "-"}
+        </span>
+      </div>
+
+      {/* Admin actions */}
+      {isAdmin && (
+        <div className="px-2 py-2 bg-muted/20 border-t border-border/30">
+          {match.status !== "completed" && (match.team1Id || match.team2Id) ? (
+            <Button
+              size="sm"
+              variant="default"
+              className="w-full h-7 text-xs"
+              onClick={() => onReport(match)}
+            >
+              Report
+            </Button>
+          ) : match.status === "completed" ? (
+            <div className="flex gap-1">
+              <Button size="sm" variant="ghost" className="flex-1 h-6 text-[10px] px-1" onClick={() => onEdit(match)}>
+                Edit
+              </Button>
+              <Button size="sm" variant="outline" className="flex-1 h-6 text-[10px] px-1" onClick={() => onOverride(match)}>
+                Override
+              </Button>
+              <Button size="sm" variant="secondary" className="flex-1 h-6 text-[10px] px-1" onClick={() => onReset(match)}>
+                Reset
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerProps) {
   const [bracket, setBracket] = useState<Bracket | null>(initial || null);
   const [reportingMatch, setReportingMatch] = useState<Match | null>(null);
@@ -28,7 +144,6 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
   const [teamsById, setTeamsById] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // fetch latest bracket if not provided
     if (!bracket) {
       api
         .getBracket(tournamentId)
@@ -41,7 +156,6 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
     return () => es.close();
   }, [tournamentId]);
 
-  // fetch teams once to show names
   useEffect(() => {
     api
       .getTeams()
@@ -95,105 +209,76 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
 
   if (!bracket) return <div className="text-sm text-muted-foreground">No bracket yet.</div>;
 
+  // Calculate the card height (including admin buttons if admin)
+  const cardHeight = isAdmin ? 130 : 95;
+  const connectorWidth = 40;
+
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto pb-4">
       {(["winners", "losers", "grand"] as const).map((side) =>
         bracket.rounds[side] && bracket.rounds[side].length > 0 ? (
-          <div key={side} className="mb-8">
-            <h4 className="font-semibold capitalize mb-3">{side} bracket</h4>
-            <div className="flex gap-6">
-              {bracket.rounds[side].map((r) => (
-                <div key={`${side}-r${r.round}`} className="min-w-[220px]">
-                  <div className="text-xs text-muted-foreground mb-2">
-                    Round {r.round}
-                  </div>
-                  <div className="space-y-3">
-                    {r.matches.map((m) => (
-                      <div
-                        key={m.id}
-                        className={`border rounded p-3 bg-card/60 relative ${
-                          m.status === "completed" ? "opacity-70" : ""
-                        }`}
-                      >
-                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                          <span>Match {m.index + 1}</span>
-                          <Badge
-                            variant={
-                              m.status === "completed" ? "secondary" : "outline"
-                            }
-                          >
-                            {m.status === "completed" ? "Completed" : "Pending"}
-                          </Badge>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <div className="flex justify-between">
-                            <span>{nameFor(m.team1Id)}</span>
-                            {typeof m.score1 === "number" && (
-                              <span className="text-xs">{m.score1}</span>
-                            )}
-                          </div>
-                          <div className="flex justify-between">
-                            <span>{nameFor(m.team2Id)}</span>
-                            {typeof m.score2 === "number" && (
-                              <span className="text-xs">{m.score2}</span>
-                            )}
-                          </div>
-                        </div>
-                        {m.winnerId && (
-                          <div className="text-xs text-primary mt-2">
-                            Winner: {nameFor(m.winnerId)}
-                          </div>
-                        )}
-                        {isAdmin &&
-                          m.status !== "completed" &&
-                          (m.team1Id || m.team2Id) && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="mt-2 w-full"
-                              onClick={() => beginReport(m)}
-                            >
-                              Report
-                            </Button>
-                          )}
-                        {isAdmin && m.status === "completed" && (
-                          <div className="grid grid-cols-3 gap-2 mt-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setEditingMatch(m)}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setOverrideMatch(m);
-                                setOverrideWinner(m.winnerId || "");
-                              }}
-                            >
-                              Override
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => setResettingMatch(m)}
-                            >
-                              Reset
-                            </Button>
-                          </div>
-                        )}
+          <div key={side} className="mb-10">
+            <h4 className="font-semibold capitalize mb-4 text-lg flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-primary" />
+              {side === "winners" ? "Winners Bracket" : side === "losers" ? "Losers Bracket" : "Grand Final"}
+            </h4>
+            
+            <div className="relative flex">
+              {bracket.rounds[side].map((r, roundIndex) => {
+                const isLastRound = roundIndex === bracket.rounds[side].length - 1;
+                const spacingMultiplier = Math.pow(2, roundIndex);
+                const matchGap = 16 * spacingMultiplier;
+                const topOffset = roundIndex === 0 ? 0 : (cardHeight + 16) * (spacingMultiplier - 1) / 2;
+                
+                return (
+                  <div key={`${side}-r${r.round}`} className="flex">
+                    {/* Round column */}
+                    <div className="flex flex-col">
+                      <div className="text-xs text-muted-foreground mb-3 font-medium px-1 h-5">
+                        {isLastRound && side === "winners" && bracket.rounds[side].length > 1 ? "Final" : `Round ${r.round}`}
                       </div>
-                    ))}
+                      <div 
+                        className="flex flex-col relative"
+                        style={{ 
+                          gap: `${matchGap}px`,
+                          paddingTop: `${topOffset}px`
+                        }}
+                      >
+                        {r.matches.map((m) => (
+                          <MatchCard
+                            key={m.id}
+                            match={m}
+                            nameFor={nameFor}
+                            isAdmin={isAdmin}
+                            onReport={beginReport}
+                            onEdit={setEditingMatch}
+                            onOverride={(m) => {
+                              setOverrideMatch(m);
+                              setOverrideWinner(m.winnerId || "");
+                            }}
+                            onReset={setResettingMatch}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Connector lines between rounds */}
+                    {!isLastRound && (
+                      <BracketConnector
+                        matchCount={r.matches.length}
+                        roundIndex={roundIndex}
+                        cardHeight={cardHeight}
+                      />
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ) : null
       )}
 
+      {/* Report Match Dialog */}
       <Dialog
         open={!!reportingMatch}
         onOpenChange={(o) => !o && setReportingMatch(null)}
@@ -309,7 +394,7 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
         </DialogContent>
       </Dialog>
 
-      {/* Override Winner (Admin) */}
+      {/* Override Winner Dialog */}
       <Dialog open={!!overrideMatch} onOpenChange={(o) => !o && setOverrideMatch(null)}>
         <DialogContent>
           <DialogHeader>
@@ -402,5 +487,92 @@ export function BracketViewer({ tournamentId, initial, isAdmin }: BracketViewerP
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// Connector component that draws bracket lines between rounds
+function BracketConnector({ 
+  matchCount, 
+  roundIndex,
+  cardHeight 
+}: { 
+  matchCount: number; 
+  roundIndex: number;
+  cardHeight: number;
+}) {
+  const baseGap = 16;
+  const spacingMultiplier = Math.pow(2, roundIndex);
+  const gap = baseGap * spacingMultiplier;
+  const slotHeight = cardHeight + gap;
+  const topOffset = roundIndex === 0 ? 0 : (cardHeight + baseGap) * (spacingMultiplier - 1) / 2;
+  
+  // Add header offset (round label height + margin)
+  const headerOffset = 20 + 12; // text height + mb-3
+  
+  const paths: JSX.Element[] = [];
+  const nextMatchCount = Math.ceil(matchCount / 2);
+  
+  for (let i = 0; i < nextMatchCount; i++) {
+    const topMatchIndex = i * 2;
+    const bottomMatchIndex = i * 2 + 1;
+    
+    // Y positions (center of each card)
+    const topMatchY = headerOffset + topOffset + topMatchIndex * slotHeight + cardHeight / 2;
+    const bottomMatchY = bottomMatchIndex < matchCount 
+      ? headerOffset + topOffset + bottomMatchIndex * slotHeight + cardHeight / 2
+      : topMatchY;
+    
+    const midY = (topMatchY + bottomMatchY) / 2;
+    
+    if (bottomMatchIndex < matchCount) {
+      // Connect two matches to one
+      paths.push(
+        <path
+          key={`connector-${i}`}
+          d={`
+            M 0 ${topMatchY} 
+            H 16 
+            V ${midY} 
+            H 40
+            M 0 ${bottomMatchY} 
+            H 16 
+            V ${midY}
+          `}
+          fill="none"
+          stroke="hsl(var(--primary))"
+          strokeWidth="2"
+          strokeOpacity="0.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      );
+    } else {
+      // Single match passthrough (bye or odd number)
+      paths.push(
+        <path
+          key={`connector-${i}`}
+          d={`M 0 ${topMatchY} H 40`}
+          fill="none"
+          stroke="hsl(var(--primary))"
+          strokeWidth="2"
+          strokeOpacity="0.4"
+          strokeLinecap="round"
+        />
+      );
+    }
+  }
+  
+  // Calculate total height needed
+  const totalHeight = headerOffset + topOffset + matchCount * slotHeight;
+  
+  return (
+    <svg
+      width="40"
+      height={totalHeight}
+      className="shrink-0"
+      style={{ marginTop: 0 }}
+    >
+      {paths}
+    </svg>
   );
 }
