@@ -292,8 +292,8 @@ function ProfileContent() {
                   <div className="flex flex-col">
                     <button
                       onClick={() => {
-                        if (editing) setActiveTab("overview");
-                        else setEditing(false);
+                        setEditing(false);
+                        setActiveTab("overview");
                       }}
                       className={`flex items-center gap-3 px-6 py-4 text-sm font-medium transition-colors border-l-2 ${
                         !editing 
@@ -372,7 +372,7 @@ function ProfileContent() {
                 <CardHeader>
                   <CardTitle>
                     {editing 
-                      ? (activeTab === "general" ? "Edit Personal Details" : "Manage Game IDs") 
+                      ? (activeTab === "gameIds" ? "Manage Game IDs" : "Edit Personal Details") 
                       : "Profile Overview"}
                   </CardTitle>
                   <CardDescription>
