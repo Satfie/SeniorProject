@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Search, ChevronDown, ChevronRight, HelpCircle, Users, Trophy, Shield, Settings, CreditCard, MessageSquare } from "lucide-react";
+import { Search, HelpCircle, Users, Trophy, Shield, Settings, MessageSquare, ChevronRight, BookOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { AnimatedSection } from "@/components/ui/animated-section";
 
 const categories = [
   {
     id: "getting-started",
     title: "Getting Started",
     icon: HelpCircle,
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/10",
     description: "New to Esport Shield? Start here.",
     faqs: [
       {
@@ -37,6 +41,8 @@ const categories = [
     id: "teams",
     title: "Teams",
     icon: Users,
+    color: "text-green-400",
+    bgColor: "bg-green-500/10",
     description: "Learn about team management and joining teams.",
     faqs: [
       {
@@ -65,6 +71,8 @@ const categories = [
     id: "tournaments",
     title: "Tournaments",
     icon: Trophy,
+    color: "text-yellow-400",
+    bgColor: "bg-yellow-500/10",
     description: "Everything about tournament participation.",
     faqs: [
       {
@@ -93,6 +101,8 @@ const categories = [
     id: "account",
     title: "Account & Profile",
     icon: Settings,
+    color: "text-purple-400",
+    bgColor: "bg-purple-500/10",
     description: "Manage your account settings and profile.",
     faqs: [
       {
@@ -121,6 +131,8 @@ const categories = [
     id: "security",
     title: "Security & Privacy",
     icon: Shield,
+    color: "text-red-400",
+    bgColor: "bg-red-500/10",
     description: "Keep your account safe and understand your data.",
     faqs: [
       {
@@ -147,7 +159,6 @@ export default function HelpCenterPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Filter FAQs based on search query
   const filteredCategories = categories.map(category => ({
     ...category,
     faqs: category.faqs.filter(
@@ -158,125 +169,166 @@ export default function HelpCenterPage() {
   })).filter(category => category.faqs.length > 0 || searchQuery === "");
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden border-b border-white/10 bg-gradient-to-b from-primary/10 via-background to-background">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20"></div>
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-[80px]"></div>
+    <div className="min-h-screen bg-background">
+      {/* Hero Section - Consistent with other pages */}
+      <section className="relative py-24 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-background to-background"></div>
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03]"></div>
         
-        <div className="container mx-auto px-4 py-20 relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
-              How can we help you?
-            </h1>
-            <p className="text-lg text-muted-foreground mb-8">
-              Search our knowledge base or browse categories below
-            </p>
+        {/* Floating Orbs - Consistent with home page */}
+        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-primary/20 rounded-full blur-[100px] animate-pulse-glow"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-[120px] animate-pulse-glow" style={{ animationDelay: "1s" }}></div>
+        
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-4xl mx-auto text-center">
+            <AnimatedSection>
+              <Badge variant="outline" className="mb-6 px-4 py-1.5 bg-primary/10 border-primary/20 text-primary">
+                <BookOpen className="w-4 h-4 mr-2" />
+                Help Center
+              </Badge>
+            </AnimatedSection>
+            
+            <AnimatedSection delay={100}>
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+                How can we <span className="text-primary">help</span> you?
+              </h1>
+            </AnimatedSection>
+            
+            <AnimatedSection delay={200}>
+              <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+                Search our knowledge base or browse categories below to find answers to your questions.
+              </p>
+            </AnimatedSection>
             
             {/* Search Bar */}
-            <div className="relative max-w-xl mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search for help..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-14 text-lg bg-background/60 backdrop-blur border-white/10 focus:border-primary"
-              />
-            </div>
+            <AnimatedSection delay={300}>
+              <div className="relative max-w-2xl mx-auto">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search for help articles..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-14 h-14 text-lg bg-card/50 backdrop-blur-sm border-white/10 focus:border-primary/50 rounded-xl shadow-lg"
+                />
+              </div>
+            </AnimatedSection>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 pb-24">
         {/* Category Cards */}
         {!searchQuery && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-            {categories.map((category) => {
-              const Icon = category.icon;
-              return (
-                <Card 
-                  key={category.id}
-                  className="bg-card/60 backdrop-blur border-white/10 hover:border-primary/50 transition-all cursor-pointer group"
-                  onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)}
-                >
-                  <CardHeader>
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                        <Icon className="w-6 h-6 text-primary" />
+          <AnimatedSection delay={400}>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-16">
+              {categories.map((category, index) => {
+                const Icon = category.icon;
+                const isSelected = selectedCategory === category.id;
+                return (
+                  <Card 
+                    key={category.id}
+                    className={`cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5 ${
+                      isSelected 
+                        ? 'border-primary/50 bg-primary/5' 
+                        : 'border-white/10 bg-card/40 backdrop-blur-sm hover:border-primary/30'
+                    }`}
+                    onClick={() => setSelectedCategory(isSelected ? null : category.id)}
+                  >
+                    <CardContent className="p-6 text-center">
+                      <div className={`w-14 h-14 rounded-xl ${category.bgColor} flex items-center justify-center mx-auto mb-4 transition-transform ${isSelected ? 'scale-110' : ''}`}>
+                        <Icon className={`w-7 h-7 ${category.color}`} />
                       </div>
-                      <div>
-                        <CardTitle className="text-lg">{category.title}</CardTitle>
-                        <CardDescription>{category.faqs.length} articles</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">{category.description}</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                      <h3 className="font-semibold mb-1">{category.title}</h3>
+                      <p className="text-xs text-muted-foreground">{category.faqs.length} articles</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </AnimatedSection>
         )}
 
         {/* FAQ Accordion */}
         <div className="max-w-4xl mx-auto">
           {filteredCategories.map((category) => (
-            <div key={category.id} className="mb-8">
+            <div key={category.id} className="mb-10">
               {(searchQuery || selectedCategory === category.id || selectedCategory === null) && (
-                <>
-                  <div className="flex items-center gap-3 mb-4">
-                    <category.icon className="w-5 h-5 text-primary" />
-                    <h2 className="text-xl font-semibold">{category.title}</h2>
+                <AnimatedSection>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className={`p-2 rounded-lg ${category.bgColor}`}>
+                      <category.icon className={`w-5 h-5 ${category.color}`} />
+                    </div>
+                    <h2 className="text-2xl font-bold">{category.title}</h2>
+                    <Badge variant="outline" className="ml-auto border-white/10">
+                      {category.faqs.length} {category.faqs.length === 1 ? 'article' : 'articles'}
+                    </Badge>
                   </div>
-                  <Accordion type="single" collapsible className="space-y-2">
+                  
+                  <Accordion type="single" collapsible className="space-y-3">
                     {category.faqs.map((faq, index) => (
                       <AccordionItem
                         key={index}
                         value={`${category.id}-${index}`}
-                        className="border border-white/10 rounded-lg px-4 bg-card/40 backdrop-blur"
+                        className="border border-white/10 rounded-xl px-6 bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-colors data-[state=open]:bg-card/60 data-[state=open]:border-primary/30"
                       >
-                        <AccordionTrigger className="text-left hover:no-underline py-4">
-                          <span className="font-medium">{faq.question}</span>
+                        <AccordionTrigger className="text-left hover:no-underline py-5 [&[data-state=open]>svg]:rotate-90">
+                          <span className="font-medium pr-4">{faq.question}</span>
                         </AccordionTrigger>
-                        <AccordionContent className="text-muted-foreground pb-4 leading-relaxed">
+                        <AccordionContent className="text-muted-foreground pb-5 leading-relaxed">
                           {faq.answer}
                         </AccordionContent>
                       </AccordionItem>
                     ))}
                   </Accordion>
-                </>
+                </AnimatedSection>
               )}
             </div>
           ))}
 
           {searchQuery && filteredCategories.every(c => c.faqs.length === 0) && (
-            <div className="text-center py-16">
-              <HelpCircle className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No results found</h3>
-              <p className="text-muted-foreground mb-6">
-                We couldn't find any articles matching "{searchQuery}"
-              </p>
-              <Button onClick={() => setSearchQuery("")} variant="outline">
-                Clear search
-              </Button>
-            </div>
+            <AnimatedSection>
+              <Card className="border-dashed border-2 border-white/10 bg-card/30">
+                <CardContent className="py-16 text-center">
+                  <div className="w-20 h-20 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-6">
+                    <HelpCircle className="w-10 h-10 text-muted-foreground/50" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">No results found</h3>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    We couldn't find any articles matching "<span className="text-foreground">{searchQuery}</span>"
+                  </p>
+                  <Button onClick={() => setSearchQuery("")} variant="outline" className="border-white/10">
+                    Clear search
+                  </Button>
+                </CardContent>
+              </Card>
+            </AnimatedSection>
           )}
         </div>
 
-        {/* Still need help? */}
-        <div className="max-w-4xl mx-auto mt-16 p-8 rounded-2xl bg-gradient-to-r from-primary/10 to-purple-500/10 border border-white/10 text-center">
-          <MessageSquare className="w-12 h-12 text-primary mx-auto mb-4" />
-          <h3 className="text-2xl font-semibold mb-2">Still need help?</h3>
-          <p className="text-muted-foreground mb-6">
-            Can't find what you're looking for? Our support team is here to help.
-          </p>
-          <Button asChild>
-            <Link href="/contact">Contact Support</Link>
-          </Button>
-        </div>
+        {/* Still need help CTA */}
+        <AnimatedSection delay={100}>
+          <Card className="max-w-4xl mx-auto mt-16 border-white/10 bg-gradient-to-r from-primary/10 via-purple-500/10 to-primary/10 overflow-hidden">
+            <CardContent className="p-10 text-center relative">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+              <div className="relative z-10">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                  <MessageSquare className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3">Still need help?</h3>
+                <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
+                  Can't find what you're looking for? Our support team is ready to assist you.
+                </p>
+                <Button asChild size="lg" className="shadow-lg shadow-primary/20">
+                  <Link href="/contact">
+                    Contact Support
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </AnimatedSection>
       </div>
     </div>
   );
