@@ -43,6 +43,12 @@ export interface UserProvider {
   linkedAt?: string;
 }
 
+export interface UserAuthMethods {
+  password: boolean;
+  oauth: string[];
+  count: number;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -54,6 +60,10 @@ export interface User {
   country?: string
   region?: string
   timezone?: string
+  // Auth state flags
+  hasPassword?: boolean;
+  hasRealEmail?: boolean;
+  emailVerified?: boolean;
   social?: {
     snapchat?: string;
     youtube?: string;
@@ -77,6 +87,7 @@ export interface User {
     smashBros?: string;
   }
   providers?: UserProvider[];
+  authMethods?: UserAuthMethods;
 }
 
 export interface Tournament {
@@ -346,6 +357,30 @@ class ApiClient {
   async unlinkProvider(provider: string) {
     return this.request<User>(`/api/auth/providers/${provider}`, {
       method: "DELETE",
+    });
+  }
+
+  // Set password for OAuth-only users
+  async setPassword(newPassword: string, email?: string) {
+    return this.request<{ message: string; user: User }>("/api/auth/set-password", {
+      method: "POST",
+      body: JSON.stringify({ newPassword, email }),
+    });
+  }
+
+  // Update email address
+  async updateEmail(email: string, password?: string) {
+    return this.request<{ message: string; user: User }>("/api/auth/update-email", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
+  // Change password (requires old password)
+  async changePassword(oldPassword: string, newPassword: string) {
+    return this.request<{ message: string }>("/api/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ oldPassword, newPassword }),
     });
   }
 

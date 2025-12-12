@@ -22,6 +22,13 @@ interface AuthContextType {
   beginOAuth: (provider: string, mode?: "login" | "link", returnTo?: string) => void
   completeOAuthLogin: (token: string, returnTo?: string) => Promise<void>
   unlinkProvider: (provider: string) => Promise<void>
+  setPassword: (newPassword: string, email?: string) => Promise<void>
+  updateEmail: (email: string, password?: string) => Promise<void>
+  changePassword: (oldPassword: string, newPassword: string) => Promise<void>
+  // Computed auth state helpers
+  hasPasswordAuth: boolean
+  hasOAuthOnly: boolean
+  canDisconnectProvider: (provider: string) => boolean
   isAdmin: boolean
   isTeamManager: boolean
   isPlayer: boolean
@@ -120,6 +127,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [refreshUser]
   );
 
+  const setPassword = useCallback(
+    async (newPassword: string, email?: string) => {
+      await api.setPassword(newPassword, email);
+      await refreshUser();
+    },
+    [refreshUser]
+  );
+
+  const updateEmail = useCallback(
+    async (email: string, password?: string) => {
+      await api.updateEmail(email, password);
+      await refreshUser();
+    },
+    [refreshUser]
+  );
+
+  const changePassword = useCallback(
+    async (oldPassword: string, newPassword: string) => {
+      await api.changePassword(oldPassword, newPassword);
+    },
+    []
+  );
+
   // Listen for team approval event to refresh user (updates teamId immediately after notification)
   const handleTeamApproved = useCallback(() => {
     void refreshUser();
@@ -131,6 +161,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () =>
       window.removeEventListener("rcd:team-approved", handleTeamApproved);
   }, [handleTeamApproved]);
+
+  // Computed auth helpers
+  const hasPasswordAuth = Boolean(user?.authMethods?.password);
+  const hasOAuthOnly = Boolean(
+    !hasPasswordAuth && 
+    user?.providers?.some(p => p.provider !== 'password')
+  );
+  
+  const canDisconnectProvider = useCallback(
+    (provider: string) => {
+      if (!user) return false;
+      if (provider === 'password') return false;
+      const authCount = user.authMethods?.count ?? 0;
+      return authCount > 1;
+    },
+    [user]
+  );
 
   const isAdmin = user?.role === "admin";
   const isTeamManager = user?.role === "team_manager";
@@ -149,6 +196,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         beginOAuth,
         completeOAuthLogin,
         unlinkProvider,
+        setPassword,
+        updateEmail,
+        changePassword,
+        hasPasswordAuth,
+        hasOAuthOnly,
+        canDisconnectProvider,
         isAdmin,
         isTeamManager,
         isPlayer,

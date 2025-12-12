@@ -86,20 +86,17 @@ async function unlinkProvider(req, res) {
   }
   try {
     const user = req.user;
-    const externalProviders = (user.providers || []).filter((p) => p.provider !== 'password');
-    const hasRealEmailPassword = !!(user.email && !String(user.email).endsWith('@oauth.local'));
-    const totalUsableMethods = externalProviders.length + (hasRealEmailPassword ? 1 : 0);
+    
+    // Use the model's method to get accurate auth method count
+    const currentCount = user.getAuthMethodCount();
 
     // Enforce: never allow unlinking the last usable login method
-    if (totalUsableMethods <= 1) {
+    if (currentCount <= 1) {
       return res.status(400).json({
         message: 'You need at least one other login method (password or another OAuth) before removing this provider.',
         code: 'last_auth_method_denied',
       });
     }
-
-    // If unlinking an external provider would result in zero external and no real password, block
-
 
     const removed = user.unlinkProvider(provider);
     if (!removed) {

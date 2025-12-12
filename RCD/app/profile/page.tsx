@@ -52,9 +52,19 @@ const oauthAccounts = [
 ];
 
 function ProfileContent() {
-  const { user, refreshUser, beginOAuth, unlinkProvider } = useAuth()
+  const { 
+    user, 
+    refreshUser, 
+    beginOAuth, 
+    unlinkProvider, 
+    setPassword, 
+    changePassword,
+    hasPasswordAuth,
+    hasOAuthOnly,
+    canDisconnectProvider,
+  } = useAuth()
   const [editing, setEditing] = useState(false)
-  const [activeTab, setActiveTab] = useState<"overview" | "gameIds" | "general">("overview")
+  const [activeTab, setActiveTab] = useState<"overview" | "gameIds" | "general" | "security">("overview")
   const [username, setUsername] = useState(user?.username || "")
   const [email, setEmail] = useState(user?.email || "")
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(user?.avatarUrl)
@@ -87,45 +97,23 @@ function ProfileContent() {
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [newEmailForPassword, setNewEmailForPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [providerBusy, setProviderBusy] = useState<string | null>(null)
 
   const connectedProviders = user?.providers || []
   const needsVerifiedEmail = !user?.email || user.email.endsWith("@oauth.local")
-  const externalProviders = connectedProviders.filter((p) => p.provider !== "password")
-  const totalUsable = externalProviders.length + (needsVerifiedEmail ? 0 : 1)
-  const canDisconnect = (provider: string) => {
-    const isExternal = provider !== "password"
-    if (!isExternal) return false
-    if (totalUsable <= 1) return false
-
-    return true
-  }
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!user) return
 
-    const wantsPasswordChange = !!(
-      currentPassword ||
-      newPassword ||
-      confirmPassword
-    );
-
-    if (wantsPasswordChange) {
-      if (!currentPassword || !newPassword || !confirmPassword) {
-        toast.error("Please fill in all password fields");
-        return;
-      }
-      if (newPassword !== confirmPassword) {
-        toast.error("New passwords do not match");
-        return;
-      }
-      if (newPassword.length < 8) {
-        toast.error("Password must be at least 8 characters");
-        return;
-      }
+    // Security tab has its own handlers, so skip for that tab
+    if (activeTab === "security") {
+      setEditing(false)
+      setActiveTab("overview")
+      return
     }
 
     setLoading(true)
@@ -141,12 +129,6 @@ function ProfileContent() {
         region: region || undefined,
       })
       toast.success("Profile updated successfully")
-      if (wantsPasswordChange) {
-        toast.success("Password changed successfully");
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-      }
       await refreshUser()
       setEditing(false)
       setActiveTab("overview")
@@ -332,6 +314,20 @@ function ProfileContent() {
                       <Gamepad2 className="w-4 h-4" />
                       Game IDs & Socials
                     </button>
+                    <button
+                      onClick={() => {
+                        setEditing(true);
+                        setActiveTab("security");
+                      }}
+                      className={`flex items-center gap-3 px-6 py-4 text-sm font-medium transition-colors border-l-2 ${
+                        editing && activeTab === "security"
+                          ? "bg-primary/10 text-primary border-primary" 
+                          : "hover:bg-white/5 border-transparent text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Lock className="w-4 h-4" />
+                      Security & Login
+                    </button>
                   </div>
                 </CardContent>
               </Card>
@@ -372,12 +368,18 @@ function ProfileContent() {
                 <CardHeader>
                   <CardTitle>
                     {editing 
-                      ? (activeTab === "gameIds" ? "Manage Game IDs" : "Edit Personal Details") 
+                      ? (activeTab === "gameIds" 
+                          ? "Manage Game IDs" 
+                          : activeTab === "security" 
+                            ? "Security & Login Methods"
+                            : "Edit Personal Details") 
                       : "Profile Overview"}
                   </CardTitle>
                   <CardDescription>
                     {editing 
-                      ? "Update your information below" 
+                      ? activeTab === "security"
+                        ? "Manage your login methods and password"
+                        : "Update your information below" 
                       : "Your public profile information"}
                   </CardDescription>
                 </CardHeader>
@@ -529,55 +531,287 @@ function ProfileContent() {
                               </div>
                             </div>
                           </div>
-                          
-                          <Separator className="bg-white/10" />
-                          
-                          <div className="space-y-4 p-4 rounded-xl bg-background/30 border border-white/5">
-                            <h3 className="text-sm font-semibold flex items-center gap-2">
+                        </div>
+                      )}
+
+                      {activeTab === "security" && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                          {/* Auth Methods Summary */}
+                          <div className="p-4 rounded-xl bg-background/30 border border-white/5">
+                            <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
                               <Lock className="w-4 h-4 text-primary" />
-                              Change Password
+                              Your Login Methods
                             </h3>
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              <div className="space-y-2 sm:col-span-2">
-                                <Label htmlFor="current-password">
-                                  Current Password
-                                </Label>
-                                <Input
-                                  id="current-password"
-                                  type="password"
-                                  placeholder="Enter current password"
-                                  value={currentPassword}
-                                  onChange={(e) => setCurrentPassword(e.target.value)}
-                                  disabled={loading}
-                                  className="bg-background/50 border-white/10"
-                                />
+                            <div className="flex flex-wrap gap-2">
+                              {hasPasswordAuth && (
+                                <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30">
+                                  Email & Password
+                                </Badge>
+                              )}
+                              {connectedProviders
+                                .filter(p => p.provider !== 'password')
+                                .map(p => (
+                                  <Badge key={p.provider} variant="outline" className="bg-primary/10 text-primary border-primary/30 capitalize">
+                                    {p.provider}
+                                  </Badge>
+                                ))}
+                              {!hasPasswordAuth && connectedProviders.filter(p => p.provider !== 'password').length === 0 && (
+                                <span className="text-sm text-muted-foreground">No login methods configured</span>
+                              )}
+                            </div>
+                            {(user?.authMethods?.count ?? 0) <= 1 && (
+                              <p className="text-xs text-amber-400 mt-3 flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4" />
+                                Add another login method to secure your account
+                              </p>
+                            )}
+                          </div>
+
+                          {/* OAuth-only users: Set up password */}
+                          {hasOAuthOnly && (
+                            <div className="space-y-4 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                              <h3 className="text-sm font-semibold flex items-center gap-2">
+                                <Lock className="w-4 h-4 text-primary" />
+                                Set Up Email & Password Login
+                              </h3>
+                              <p className="text-xs text-muted-foreground">
+                                Add a password to your account so you can log in without OAuth providers.
+                              </p>
+                              {needsVerifiedEmail && (
+                                <div className="space-y-2">
+                                  <Label htmlFor="new-email-for-password">Email Address</Label>
+                                  <div className="relative">
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                    <Input
+                                      id="new-email-for-password"
+                                      type="email"
+                                      placeholder="Enter your email address"
+                                      value={newEmailForPassword}
+                                      onChange={(e) => setNewEmailForPassword(e.target.value)}
+                                      disabled={loading}
+                                      className="pl-10 bg-background/50 border-white/10"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                  <Label htmlFor="set-new-password">New Password</Label>
+                                  <Input
+                                    id="set-new-password"
+                                    type="password"
+                                    placeholder="At least 8 characters"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    disabled={loading}
+                                    className="bg-background/50 border-white/10"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="set-confirm-password">Confirm Password</Label>
+                                  <Input
+                                    id="set-confirm-password"
+                                    type="password"
+                                    placeholder="Re-enter password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    disabled={loading}
+                                    className="bg-background/50 border-white/10"
+                                  />
+                                </div>
                               </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="new-password">New Password</Label>
-                                <Input
-                                  id="new-password"
-                                  type="password"
-                                  placeholder="Enter new password"
-                                  value={newPassword}
-                                  onChange={(e) => setNewPassword(e.target.value)}
-                                  disabled={loading}
-                                  className="bg-background/50 border-white/10"
-                                />
+                              {/*
+                                Extracted the complex disabled condition into a computed variable for readability.
+                              */}
+                              {(() => {
+                                const isSetPasswordButtonDisabled =
+                                  loading ||
+                                  !newPassword ||
+                                  newPassword !== confirmPassword ||
+                                  newPassword.length < 8 ||
+                                  (needsVerifiedEmail && !newEmailForPassword);
+                                return (
+                                  <Button
+                                    type="button"
+                                    disabled={isSetPasswordButtonDisabled}
+                                    onClick={async () => {
+                                      if (newPassword !== confirmPassword) {
+                                        toast.error("Passwords do not match")
+                                        return
+                                      }
+                                      if (newPassword.length < 8) {
+                                        toast.error("Password must be at least 8 characters")
+                                        return
+                                      }
+                                      setLoading(true)
+                                      try {
+                                        await setPassword(newPassword, needsVerifiedEmail ? newEmailForPassword : undefined)
+                                        toast.success("Password set successfully! You can now log in with email and password.")
+                                        setNewPassword("")
+                                        setConfirmPassword("")
+                                        setNewEmailForPassword("")
+                                      } catch (error: any) {
+                                        toast.error(error.message || "Failed to set password")
+                                      } finally {
+                                        setLoading(false)
+                                      }
+                                    }}
+                                    className="w-full"
+                                  >
+                                {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Lock className="w-4 h-4 mr-2" />}
+                                Set Password
+                              </Button>
+                                );
+                              })()}
+                            </div>
+                          )}
+
+                          {/* Password users: Change password */}
+                          {hasPasswordAuth && (
+                            <div className="space-y-4 p-4 rounded-xl bg-background/30 border border-white/5">
+                              <h3 className="text-sm font-semibold flex items-center gap-2">
+                                <Lock className="w-4 h-4 text-primary" />
+                                Change Password
+                              </h3>
+                              <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-2 sm:col-span-2">
+                                  <Label htmlFor="current-password">Current Password</Label>
+                                  <Input
+                                    id="current-password"
+                                    type="password"
+                                    placeholder="Enter current password"
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                    disabled={loading}
+                                    className="bg-background/50 border-white/10"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="new-password">New Password</Label>
+                                  <Input
+                                    id="new-password"
+                                    type="password"
+                                    placeholder="At least 8 characters"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    disabled={loading}
+                                    className="bg-background/50 border-white/10"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="confirm-new-password">Confirm New Password</Label>
+                                  <Input
+                                    id="confirm-new-password"
+                                    type="password"
+                                    placeholder="Re-enter new password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    disabled={loading}
+                                    className="bg-background/50 border-white/10"
+                                  />
+                                </div>
                               </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="confirm-new-password">
-                                  Confirm New Password
-                                </Label>
-                                <Input
-                                  id="confirm-new-password"
-                                  type="password"
-                                  placeholder="Re-enter new password"
-                                  value={confirmPassword}
-                                  onChange={(e) => setConfirmPassword(e.target.value)}
-                                  disabled={loading}
-                                  className="bg-background/50 border-white/10"
-                                />
-                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                disabled={loading || !currentPassword || !newPassword || newPassword !== confirmPassword || newPassword.length < 8}
+                                onClick={async () => {
+                                  if (newPassword !== confirmPassword) {
+                                    toast.error("Passwords do not match")
+                                    return
+                                  }
+                                  if (newPassword.length < 8) {
+                                    toast.error("Password must be at least 8 characters")
+                                    return
+                                  }
+                                  setLoading(true)
+                                  try {
+                                    await changePassword(currentPassword, newPassword)
+                                    toast.success("Password changed successfully")
+                                    setCurrentPassword("")
+                                    setNewPassword("")
+                                    setConfirmPassword("")
+                                  } catch (error: any) {
+                                    toast.error(error.message || "Failed to change password")
+                                  } finally {
+                                    setLoading(false)
+                                  }
+                                }}
+                                className="w-full border-white/10"
+                              >
+                                {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                Change Password
+                              </Button>
+                            </div>
+                          )}
+
+                          <Separator className="bg-white/10" />
+
+                          {/* Connected OAuth Accounts */}
+                          <div className="space-y-4">
+                            <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
+                              <Link2 className="w-4 h-4" />
+                              Connected Accounts
+                            </h3>
+                            <div className="space-y-3">
+                              {oauthAccounts.map(({ provider, label }) => {
+                                const providerEntry = connectedProviders.find((p) => p.provider === provider)
+                                const isConnected = Boolean(providerEntry)
+                                const canDisconnect = canDisconnectProvider(provider)
+                                return (
+                                  <div key={provider} className="flex items-center justify-between p-4 rounded-xl bg-background/40 border border-white/5">
+                                    <div>
+                                      <p className="font-medium">{label}</p>
+                                      {isConnected ? (
+                                        <p className="text-xs text-muted-foreground">
+                                          Connected{" "}
+                                          {providerEntry?.linkedAt
+                                            ? new Date(providerEntry.linkedAt).toLocaleDateString()
+                                            : ""}
+                                        </p>
+                                      ) : (
+                                        <p className="text-xs text-muted-foreground">Not connected</p>
+                                      )}
+                                    </div>
+                                    {isConnected ? (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="border-white/10"
+                                        disabled={providerBusy === provider || !canDisconnect}
+                                        title={!canDisconnect ? "This is your only login method. Add another before removing." : undefined}
+                                        onClick={async () => {
+                                          setProviderBusy(provider)
+                                          try {
+                                            await unlinkProvider(provider)
+                                            toast.success(`${label} disconnected`)
+                                          } catch (error: any) {
+                                            toast.error(error?.message || `Failed to disconnect ${label}`)
+                                          } finally {
+                                            setProviderBusy(null)
+                                          }
+                                        }}
+                                      >
+                                        {providerBusy === provider ? (
+                                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        ) : (
+                                          <Unplug className="w-4 h-4 mr-2" />
+                                        )}
+                                        Disconnect
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        size="sm"
+                                        className="shadow-primary/20 shadow-lg"
+                                        onClick={() => beginOAuth(provider, "link", "/profile")}
+                                      >
+                                        <Link2 className="w-4 h-4 mr-2" />
+                                        Connect
+                                      </Button>
+                                    )}
+                                  </div>
+                                )
+                              })}
                             </div>
                           </div>
                         </div>
@@ -612,73 +846,37 @@ function ProfileContent() {
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                       {/* Overview Tab (read-only) */}
                       
+                      {/* Auth Status Summary */}
                       <div className="space-y-4">
                         <h3 className="text-sm font-semibold flex items-center gap-2 text-primary">
-                          <Link2 className="w-4 h-4" />
-                          Linked Accounts
+                          <Lock className="w-4 h-4" />
+                          Login Methods
                         </h3>
-                        <div className="space-y-3">
-                          {oauthAccounts.map(({ provider, label }) => {
-                            const providerEntry = connectedProviders.find((p) => p.provider === provider)
-                            const isConnected = Boolean(providerEntry)
-                            return (
-                              <div key={provider} className="flex items-center justify-between p-4 rounded-xl bg-background/40 border border-white/5">
-                                <div>
-                                  <p className="font-medium">{label}</p>
-                                  {isConnected ? (
-                                    <p className="text-xs text-muted-foreground">
-                                      Connected{" "}
-                                      {providerEntry?.linkedAt
-                                        ? new Date(providerEntry.linkedAt).toLocaleDateString()
-                                        : ""}
-                                    </p>
-                                  ) : (
-                                    <p className="text-xs text-muted-foreground">Not connected</p>
-                                  )}
-                                </div>
-                                {isConnected ? (
-                                  <>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="border-white/10"
-                                      disabled={providerBusy === provider || !canDisconnect(provider)}
-                                      title={!canDisconnect(provider) ? "This is your only login method. Add another before removing." : undefined}
-                                      onClick={async () => {
-                                        setProviderBusy(provider)
-                                        try {
-                                          await unlinkProvider(provider)
-                                          toast.success(`${label} disconnected`)
-                                        } catch (error: any) {
-                                          toast.error(error?.message || `Failed to disconnect ${label}`)
-                                        } finally {
-                                          setProviderBusy(null)
-                                        }
-                                      }}
-                                    >
-                                      <Unplug className="w-4 h-4 mr-2" />
-                                      Disconnect
-                                    </Button>
-                                  </>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    className="shadow-primary/20 shadow-lg"
-                                    onClick={() => beginOAuth(provider, "link", "/profile")}
-                                  >
-                                    <Link2 className="w-4 h-4 mr-2" />
-                                    Connect
-                                  </Button>
-                                )}
-                              </div>
-                            )
-                          })}
+                        <div className="p-4 rounded-xl bg-background/40 border border-white/5">
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {hasPasswordAuth && (
+                              <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/30">
+                                Email & Password
+                              </Badge>
+                            )}
+                            {connectedProviders
+                              .filter(p => p.provider !== 'password')
+                              .map(p => (
+                                <Badge key={p.provider} variant="outline" className="bg-primary/10 text-primary border-primary/30 capitalize">
+                                  {p.provider}
+                                </Badge>
+                              ))}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-white/10"
+                            onClick={() => { setEditing(true); setActiveTab("security"); }}
+                          >
+                            <Lock className="w-4 h-4 mr-2" />
+                            Manage Security Settings
+                          </Button>
                         </div>
-                        {totalUsable <= 1 && (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            You need at least one login method linked before removing your current one.
-                          </p>
-                        )}
                       </div>
 
                       <Separator className="bg-white/10" />

@@ -35,6 +35,9 @@ exports.registerUser = async (req, res) => {
         if (!email || !password) {
             return res.status(400).json({ message: 'Email and password are required' });
         }
+        if (password.length < 8) {
+            return res.status(400).json({ message: 'Password must be at least 8 characters' });
+        }
 
         const normalizedEmail = User.normalizeEmail(email);
         const [existingEmail, existingUsername] = await Promise.all([
@@ -49,7 +52,21 @@ exports.registerUser = async (req, res) => {
             return res.status(400).json({ message: 'Username is already taken' });
         }
 
-        const newUser = new User({ email: normalizedEmail, password, username: username.trim(), role: 'player' });
+        const newUser = new User({ 
+            email: normalizedEmail, 
+            password, 
+            username: username.trim(), 
+            role: 'player',
+            hasPassword: true, // User registered with password
+            emailVerified: false, // Email not verified yet
+        });
+        // Add password provider
+        newUser.providers = [{
+            provider: 'password',
+            providerId: normalizedEmail,
+            displayName: username.trim(),
+            linkedAt: new Date(),
+        }];
         await newUser.save();
 
         // Generate token
@@ -89,6 +106,96 @@ exports.changePassword = async (req, res) => {
         return res.json({ message: 'Password updated' });
     } catch (err) {
         console.error('Change password error:', err);
+        return res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Set password for OAuth-only users (or reset password)
+exports.setPassword = async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) return res.status(401).json({ message: 'Unauthenticated' });
+        
+        const { newPassword, email } = req.body;
+        if (!newPassword || newPassword.length < 8) {
+            return res.status(400).json({ message: 'Password must be at least 8 characters' });
+        }
+
+        // If user doesn't have a real email, they must provide one
+        const hasRealEmail = user.email && !String(user.email).endsWith('@oauth.local');
+        if (!hasRealEmail) {
+            if (!email || !email.includes('@') || email.endsWith('@oauth.local')) {
+                return res.status(400).json({ message: 'A valid email address is required to set up password login' });
+            }
+            // Check if email is already taken by another user
+            const existingUser = await User.findOne({ email: User.normalizeEmail(email) });
+            if (existingUser && existingUser.id !== user.id) {
+                return res.status(400).json({ message: 'This email is already registered to another account' });
+            }
+            user.email = User.normalizeEmail(email);
+        }
+
+        // Set the password
+        await user.setPassword(newPassword);
+        await user.save();
+        
+        return res.json({ 
+            message: 'Password set successfully. You can now log in with email and password.',
+            user: user.toSafeObject(),
+        });
+    } catch (err) {
+        console.error('Set password error:', err);
+        return res.status(500).json({ message: err.message || 'Server error' });
+    }
+};
+
+// Update email for authenticated user
+exports.updateEmail = async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) return res.status(401).json({ message: 'Unauthenticated' });
+        
+        const { email, password } = req.body;
+        if (!email || !email.includes('@') || email.endsWith('@oauth.local')) {
+            return res.status(400).json({ message: 'A valid email address is required' });
+        }
+
+        // If user has password auth, require password confirmation
+        if (user.hasPassword) {
+            if (!password) {
+                return res.status(400).json({ message: 'Password required to change email' });
+            }
+            const matches = await user.comparePassword(password);
+            if (!matches) {
+                return res.status(401).json({ message: 'Invalid password' });
+            }
+        }
+
+        const normalizedEmail = User.normalizeEmail(email);
+        
+        // Check if email is already taken
+        const existingUser = await User.findOne({ email: normalizedEmail });
+        if (existingUser && existingUser.id !== user.id) {
+            return res.status(400).json({ message: 'This email is already registered' });
+        }
+
+        user.email = normalizedEmail;
+        user.emailVerified = false; // New email needs verification
+        
+        // Update password provider ID if exists
+        const passwordProvider = user.providers?.find(p => p.provider === 'password');
+        if (passwordProvider) {
+            passwordProvider.providerId = normalizedEmail;
+        }
+        
+        await user.save();
+        
+        return res.json({ 
+            message: 'Email updated successfully',
+            user: user.toSafeObject(),
+        });
+    } catch (err) {
+        console.error('Update email error:', err);
         return res.status(500).json({ message: 'Server error' });
     }
 };

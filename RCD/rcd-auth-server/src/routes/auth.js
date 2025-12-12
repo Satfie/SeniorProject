@@ -1,7 +1,7 @@
 // filepath: /rcd-auth-server/rcd-auth-server/src/routes/auth.js
 const express = require('express');
 const passport = require('passport');
-const { loginUser, registerUser, changePassword } = require('../controllers/authController');
+const { loginUser, registerUser, changePassword, setPassword, updateEmail } = require('../controllers/authController');
 const authMiddleware = require('../middleware/authMiddleware');
 const {
   buildStatePayload,
@@ -22,8 +22,14 @@ router.post('/login', loginUser);
 // Route for user registration
 router.post('/register', registerUser);
 
-// Change password (authenticated user only)
+// Change password (authenticated user only, requires old password)
 router.post('/change-password', authMiddleware, changePassword);
+
+// Set password (for OAuth-only users to add password auth)
+router.post('/set-password', authMiddleware, setPassword);
+
+// Update email (authenticated user only)
+router.post('/update-email', authMiddleware, updateEmail);
 
 // OAuth: Discord
 const oauthProviders = [

@@ -325,7 +325,7 @@ export default function PrivacyPolicyPage() {
                       <div key={idx} className="mt-6 p-4 rounded-xl bg-background/50">
                         <h3 className="font-semibold text-foreground mb-2">{sub.title}</h3>
                         <p className="mb-3">{sub.content}</p>
-                        {sub.list && (
+                        {'list' in sub && sub.list && (
                           <ul className="space-y-2 ml-4">
                             {sub.list.map((item, i) => (
                               <li key={i} className="flex items-start gap-3">
