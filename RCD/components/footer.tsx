@@ -52,22 +52,22 @@ export function Footer() {
             <h3 className="font-semibold mb-6 text-foreground">Support</h3>
             <ul className="space-y-3 text-sm">
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
+                <Link href="/help" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary/50 group-hover:bg-primary transition-colors"></span>
                   Help Center
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
+                <Link href="/contact" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary/50 group-hover:bg-primary transition-colors"></span>
                   Contact Us
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
+                <Link href="/terms" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 group">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary/50 group-hover:bg-primary transition-colors"></span>
                   Terms of Service
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -101,8 +101,8 @@ export function Footer() {
         <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Esport Shield. All rights reserved.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-foreground transition-colors">Cookie Policy</a>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+            <Link href="/cookies" className="hover:text-foreground transition-colors">Cookie Policy</Link>
           </div>
         </div>
       </div>
