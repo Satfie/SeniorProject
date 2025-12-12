@@ -17,16 +17,16 @@ import { Logo } from "@/components/logo"
 
 export default function HomePage() {
   const { user } = useAuth()
-  const featuresRef = useRef<HTMLElement>(null)
+  const statsRef = useRef<HTMLElement>(null)
 
-  const scrollToFeatures = () => {
-    featuresRef.current?.scrollIntoView({ behavior: "smooth" })
+  const scrollToNext = () => {
+    statsRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden snap-y snap-mandatory scroll-smooth motion-reduce:scroll-auto motion-reduce:snap-none">
       {/* Hero Section */}
-      <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden bg-background">
+      <section className="relative h-[100vh] flex items-center justify-center overflow-hidden bg-background snap-center">
         {/* Animated Background Elements */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background opacity-70"></div>
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
@@ -95,8 +95,9 @@ export default function HomePage() {
             {/* Scroll indicator */}
             <AnimatedSection delay={500} className="pt-16">
               <button 
-                onClick={scrollToFeatures}
-                className="mx-auto flex flex-col items-center gap-2 text-muted-foreground hover:text-primary transition-colors group"
+                onClick={scrollToNext}
+                className="mx-auto flex flex-col items-center gap-2 text-muted-foreground hover:text-primary transition-colors group cursor-pointer"
+                aria-label="Scroll to next section"
               >
                 <span className="text-sm">Discover More</span>
                 <div className="w-6 h-10 border-2 border-current rounded-full p-1 group-hover:border-primary transition-colors">
@@ -109,7 +110,7 @@ export default function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 bg-gradient-to-b from-background via-primary/5 to-background relative overflow-hidden">
+      <section ref={statsRef} className="h-[100svh] py-24 flex items-center bg-gradient-to-b from-background via-primary/5 to-background relative overflow-hidden snap-center">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.02]"></div>
         <div className="container mx-auto px-4 relative">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
@@ -134,7 +135,7 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section ref={featuresRef} className="py-32 relative">
+      <section className="h-[100svh] py-24 md:py-32 flex items-center relative snap-center">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent"></div>
         <div className="container mx-auto px-4 relative">
           <AnimatedSection className="text-center mb-16">
@@ -190,7 +191,7 @@ export default function HomePage() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-32 bg-background relative overflow-hidden">
+      <section className="h-[100svh] py-24 md:py-32 flex items-center bg-background relative overflow-hidden snap-center">
         <div className="absolute top-0 left-0 w-1/2 h-full bg-gradient-to-r from-primary/5 to-transparent"></div>
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
         
@@ -238,7 +239,7 @@ export default function HomePage() {
       </section>
 
       {/* Platform Features Grid */}
-      <section className="py-32 relative overflow-hidden">
+      <section className="h-[100svh] py-24 md:py-32 flex items-center relative overflow-hidden snap-center">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/5"></div>
         
         <div className="container mx-auto px-4 relative">
@@ -319,7 +320,7 @@ export default function HomePage() {
       </section>
 
       {/* Team Management Section */}
-      <section className="py-32 bg-background relative overflow-hidden">
+      <section className="h-[100svh] py-24 md:py-32 flex items-center bg-background relative overflow-hidden snap-center">
         <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-purple-500/5 to-transparent"></div>
         
         <div className="container mx-auto px-4 relative">
@@ -409,7 +410,7 @@ export default function HomePage() {
       </section>
 
       {/* Games Section */}
-      <section className="py-32 relative overflow-hidden">
+      <section className="h-[100svh] py-24 md:py-32 flex items-center relative overflow-hidden snap-center">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent"></div>
         
         <div className="container mx-auto px-4 relative">
@@ -450,7 +451,7 @@ export default function HomePage() {
       </section>
 
       {/* Security & Trust Section */}
-      <section className="py-32 bg-background relative overflow-hidden">
+      <section className="h-[100svh] py-24 md:py-32 flex items-center bg-background relative overflow-hidden snap-center">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.02]"></div>
         
         <div className="container mx-auto px-4 relative">
@@ -485,7 +486,7 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials/Social Proof */}
-      <section className="py-32 relative overflow-hidden">
+      <section className="h-[100svh] py-24 md:py-32 flex items-center relative overflow-hidden snap-center">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-purple-500/5 to-pink-500/5"></div>
         
         <div className="container mx-auto px-4 relative">
@@ -520,14 +521,14 @@ export default function HomePage() {
               },
             ].map((testimonial, i) => (
               <AnimatedSection key={i} delay={i * 100}>
-                <Card className="h-full border-primary/10 bg-card/30 backdrop-blur-sm p-6">
+                <Card className="h-full border-primary/10 bg-card/30 backdrop-blur-sm p-6 flex flex-col">
                   <div className="flex gap-1 mb-4">
                     {[...Array(testimonial.rating)].map((_, j) => (
                       <Star key={j} className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                     ))}
                   </div>
                   <p className="text-foreground mb-6 italic">&ldquo;{testimonial.quote}&rdquo;</p>
-                  <div className="flex items-center gap-3">
+                  <div className="mt-auto flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-primary/20"></div>
                     <div>
                       <div className="font-medium text-sm">{testimonial.author}</div>
@@ -542,7 +543,7 @@ export default function HomePage() {
       </section>
 
       {/* Platform Access Section */}
-      <section className="py-32 bg-background relative overflow-hidden">
+      <section className="h-[100svh] py-24 md:py-32 flex items-center bg-background relative overflow-hidden snap-center">
         <div className="container mx-auto px-4 relative">
           <div className="grid lg:grid-cols-2 gap-16 items-center max-w-6xl mx-auto">
             <AnimatedSection>
@@ -599,7 +600,7 @@ export default function HomePage() {
 
       {/* CTA Section */}
       {!user && (
-        <section className="py-32 relative overflow-hidden">
+        <section className="h-[100svh] py-24 md:py-32 flex items-center relative overflow-hidden snap-center">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-purple-500/20 to-pink-500/20 opacity-50"></div>
           <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.05]"></div>
           <div className="absolute top-1/2 left-1/4 w-64 h-64 bg-primary/30 rounded-full blur-3xl animate-pulse-glow"></div>
@@ -636,7 +637,7 @@ export default function HomePage() {
 
       {/* Logged in CTA */}
       {user && (
-        <section className="py-32 relative overflow-hidden">
+        <section className="h-[100svh] py-24 md:py-32 flex items-center relative overflow-hidden snap-center">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10"></div>
           
           <div className="container mx-auto px-4 relative z-10">

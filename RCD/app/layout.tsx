@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Toaster } from "@/components/ui/sonner"
+import { LayoutWrapper } from "@/components/layout-wrapper"
 
 import { Geist, Geist_Mono, Geist as V0_Font_Geist, Geist_Mono as V0_Font_Geist_Mono, Source_Serif_4 as V0_Font_Source_Serif_4 } from 'next/font/google'
 
@@ -29,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-sans antialiased flex flex-col min-h-screen">
+      <body className="font-sans antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -38,9 +39,11 @@ export default function RootLayout({
         >
           <AuthProvider>
             <NotificationsProvider>
-              <Navbar />
-              <main className="flex-1">{children}</main>
-              <Footer />
+              <LayoutWrapper>
+                <Navbar />
+                <main className="flex-1">{children}</main>
+                <Footer />
+              </LayoutWrapper>
               <Toaster />
             </NotificationsProvider>
           </AuthProvider>
