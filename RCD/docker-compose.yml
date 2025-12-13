@@ -34,7 +34,7 @@ services:
       - NODE_ENV=production
       - PORT=3002
       - MONGO_URI=mongodb://rcd-mongo:27017/rcd
-      - FRONTEND_ORIGIN=http://rcd-web:8080,http://localhost:8080
+      - FRONTEND_ORIGIN=https://eshield.live,http://rcd-web:8080,http://localhost:8080
       - JWT_SECRET=dev_super_secret_jwt
       - USE_MEMORY_DB=false
       - AUTO_CREATE_ADMIN=false
