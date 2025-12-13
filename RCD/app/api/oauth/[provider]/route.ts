@@ -2,9 +2,23 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const SUPPORTED_PROVIDERS = new Set(["discord", "google"]);
 
-function isDockerOnlyHostname(host: string) {
-  const h = (host || "").toLowerCase();
-  return h && !h.includes(".") && h !== "localhost" && h !== "127.0.0.1";
+function getPublicOrigin(req: NextRequest): string {
+  // Get the actual public origin from forwarded headers (set by nginx/proxy)
+  const forwardedProto = req.headers.get("x-forwarded-proto") || "https";
+  const forwardedHost = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  
+  if (forwardedHost && !forwardedHost.includes("localhost") && !forwardedHost.includes("127.0.0.1")) {
+    return `${forwardedProto}://${forwardedHost.split(":")[0]}`;
+  }
+  
+  // Fallback: check if host header has a real domain
+  const host = req.headers.get("host");
+  if (host && host.includes(".") && !host.includes("localhost")) {
+    return `${forwardedProto}://${host.split(":")[0]}`;
+  }
+  
+  // Last resort: use the request URL origin
+  return req.nextUrl.origin;
 }
 
 async function redirectToProvider(req: NextRequest, providerParam: string) {
@@ -13,21 +27,10 @@ async function redirectToProvider(req: NextRequest, providerParam: string) {
     return NextResponse.json({ message: "Unsupported provider" }, { status: 404 });
   }
 
-  // Prefer public URL; fallback to internal auth URL.
-  const publicEnv = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
-  const internalEnv = process.env.AUTH_SERVICE_URL;
-
-  let baseUrl = publicEnv || internalEnv || "http://localhost:3002";
-  try {
-    const url = new URL(baseUrl);
-    if (!publicEnv && isDockerOnlyHostname(url.hostname)) {
-      // Rewrite to request hostname so browser can resolve (avoid docker-only names like rcd-auth)
-      url.hostname = req.nextUrl.hostname;
-      baseUrl = url.toString();
-    }
-  } catch {
-    baseUrl = "http://localhost:3002";
-  }
+  // For browser redirects, we need to use a URL the browser can reach.
+  // Use the public-facing origin from forwarded headers.
+  const publicAuthUrl = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
+  const baseUrl = publicAuthUrl || getPublicOrigin(req);
 
   const target = new URL(`/api/auth/${normalized}`, baseUrl);
   req.nextUrl.searchParams.forEach((value, key) => {
